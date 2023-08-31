@@ -307,30 +307,29 @@
 				for (let z in animals[x].species[y].seasons){
 					
 					let row = document.createElement("div");
-					row.setAttribute("class", "row border-bottom");
+					row.setAttribute("class", "row row-cols-2 border border-danger rounded-3 alert-danger");
 					
 					cont.appendChild(row);
 				
 					let sDate = document.createElement("div");
-					sDate.setAttribute("class", "col-2 alert-danger");
-					sDate.innerHTML = animals[x].species[y].seasons[z].getStart();
+					sDate.setAttribute("class", "col fw-bolder");
+					sDate.innerHTML = "Fra: " + animals[x].species[y].seasons[z].getStart();
 					row.appendChild(sDate);
 					
 					let eDate = document.createElement("div");
-					eDate.setAttribute("class", "col-2 alert-danger");
-					eDate.innerHTML = animals[x].species[y].seasons[z].getEnd();
+					eDate.setAttribute("class", "col fw-bolder");
+					eDate.innerHTML = "Til: " + animals[x].species[y].seasons[z].getEnd();
 					row.appendChild(eDate);
 					
 					let desc = document.createElement("div");
-					desc.setAttribute("class", "col-8 alert-danger");
+					desc.setAttribute("class", "col-12");
 					desc.innerHTML = animals[x].species[y].seasons[z].getDescription();
 					row.appendChild(desc);
 				
 					if(animals[x].species[y].seasons[z].getInSeason()){
 						
-						sDate.setAttribute("class", "col-2 alert-success");
-						eDate.setAttribute("class", "col-2 alert-success");
-						desc.setAttribute("class", "col-8 alert-success");
+						row.setAttribute("class", "row row-cols-2 border border-success rounded-3 alert-success");
+						
 					}
 				
 					
