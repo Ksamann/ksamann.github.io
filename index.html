@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Jakttider</title>
+    <!-- Latest compiled and minified CSS -->
+	 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+
+	<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
+  </head>
+  <body>
+  
+  
+  <div class="container bg-secondary bg-gradient">
+  <div id="Header" class="row align-items-center">
+	<div class="col">
+		<h1 class="text-light">Jakttider</h1>
+	</div>
+	<div class="col">
+		<h4>
+			<span id="DateLabel" class="align-middle mx-auto badge rounded-pill bg-light text-dark">Test</span>
+		</h4>
+		
+	</div>
+  
+  </div>
+	
+	<div id="DateBox">
+		
+	</div>
+	
+  </div>
+	
+	<div id="Content" class="container">
+	
+	</div>
+	<script>
+	
+	class Season{
+		
+		
+		
+		constructor(start, end, desc){
+			this.start = start;
+			this.end = end;
+			this.description = desc;
+			this.inSeason = inSeason(this.start, this.end);
+		
+		}
+		
+		getStart(){
+			if(this.start instanceof Date){
+				return this.start.toLocaleDateString();
+			}
+			else{
+				return "------";
+			}	
+		}
+		getEnd(){
+			if(this.end instanceof Date){
+				return this.end.toLocaleDateString();
+			}
+			else{
+				return "------";
+			}
+		}
+		getDescription(){
+			return this.description;
+		}
+		getInSeason(){
+			return this.inSeason;
+		}
+	}
+	
+	let contentContainer = document.getElementById("Content");
+	
+	let list;
+	
+	let animals;
+	
+	populateList();
+	
+		
+	
+	document.addEventListener("DOMContentLoaded", function(){
+		tick();
+		setInterval(tick, 1000);
+	});
+	
+	function tick(){
+		printLocalDateTime();
+	}
+	
+	function createLine(period){
+		
+		let line = document.createElement("div");
+		line.className = "card";
+		
+		let cardHead = document.createElement("h4");
+		cardHead.className = "card-title";
+		cardHead.innerHTML = period.Art;
+		line.appendChild(cardHead);
+		
+		let sDate = document.createElement("p");
+		sDate.className = "card-text";
+		sDate.innerHTML = "Fra og med: ";
+		sDate.innerHTML += convertDate(period['fra og med']).toLocaleDateString();
+		sDate.innerHTML += " til og med: ";
+		sDate.innerHTML += convertDate(period['til og med']).toLocaleDateString();
+		line.appendChild(sDate);
+		
+		
+		periodList.appendChild(line);
+	
+	}
+	
+	
+	//Print local date and time in header
+	function printLocalDateTime(){
+		let date= new Date();
+		document.getElementById("DateLabel").innerHTML = date.toLocaleString();
+	}
+	
+	//Converting date from Excel to JS
+	function convertDate(dateFromExcel){
+		if(dateFromExcel == ''){
+			return "------";
+		}
+	
+		let dayOffset = (70*365)+19;
+		let daysSinceStart = dateFromExcel - dayOffset;
+		let dayInMilliSec = 86400000;
+		let hourInMilliSec = 3600000;		
+		let convertedDate = daysSinceStart * dayInMilliSec;
+		
+		let returnDate = new Date(convertedDate - (hourInMilliSec * 2));
+		return returnDate;
+	}
+	
+	function populateList(){
+	let inputString = '{"perioder":[{"Art":"Toppskarv","Område":"Troms og Finnmark og Nordland fylker, og nord for Trondheimsfjorden i Trøndelag fylke.","fra og med":45200,"til og med":45260,"Kategori":"Skarver"},{"Art":"Storskarv","Område":"Kun ungfugl med hvit buk i saltvannslokaliteter i Viken, Oslo, Vestfold og Telemark og Agder fylker.","fra og med":45179,"til og med":45239,"Kategori":"Skarver"},{"Art":"Storskarv","Område":"Kun ungfugl med hvit buk i saltvannslokaliteter i Rogaland, Vestland, Møre og Romsdal, Trøndelag, Nordland og Troms og Finnmark fylker.","fra og med":45200,"til og med":45260,"Kategori":"Skarver"},{"Art":"Storskarv","Område":"Alle storskarv i ferskvannslokaliteter i Viken, Innlandet, Vestfold og Telemark, Agder, Rogaland og Vestland fylker.","fra og med":45148,"til og med":45283,"Kategori":"Skarver"},{"Art":"Kortnebbgås","Område":"Hele landet med de unntakene som nevnes nedenfor.","fra og med":45148,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Kortnebbgås","Område":"I tidligere Finnmark fylke er arten fredet.","fra og med":"","til og med":"","Kategori":"Andefugler"},{"Art":"Kortnebbgås","Område":"I tidligere Troms fylke og Nordland fylke nord for Rana og Rødøy kommuner.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Kortnebbgås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Grågås","Område":"Hele landet med de unntakene som nevnes nedenfor.","fra og med":45148,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Grågås","Område":"I tidligere Finnmark fylke er jakt kun tillatt i ytre fjordstrøk og kyst med følgende avgrensning: Nord for fylkesvei 98 fra Smalfjord i Vestertana og landområdet vest for Smalfjord og Tanafjorden til Børselv i Porsanger. Videre nordvest for en rett linje fra Børselv til Ytre Billefjord. Videre nord for E6 fra Ytre Billefjord i Porsanger til Rafsbotn i Alta. Herfra følger avgrensningen rett vest i en rett linje fra Rafsbotn til Talvik. Videre nord for E6 fra Talvik til grensen i tidligere Troms fylke og nordover langs den tidligere fylkesgrensen.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Grågås","Område":"I tidligere Troms fylke og Nordland fylke nord for Rana og Rødøy kommuner.","fra og med":45153,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Grågås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Brunnakke","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Brunnakke","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Krikkand","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Krikkand","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Stokkand","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Stokkand","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Toppand","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Kvinand","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Siland","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Laksand","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Svartand","Område":"Tidligere Østfold fylke.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Ærfugl","Område":"Kun hannfugl av ærfugl i Vestfold og Telemark fylke, tidligere Østfold, tidligere Buskerud og tidligere Aust-Agder fylker. Hver jeger kan felle inntil fem fugler per døgn, og inntil 25 fugler per jaktår.","fra og med":45200,"til og med":45260,"Kategori":"Andefugler"},{"Art":"Jerpe","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Hønsefugler"},{"Art":"Orrfugl","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Hønsefugler"},{"Art":"Storfugl","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Hønsefugler"},{"Art":"Lirype","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45179,"til og med":45350,"Kategori":"Hønsefugler"},{"Art":"Lirype","Område":"Troms og Finnmark fylke og Narvik og Evenes kommuner, samt den delen av Hamarøy kommune som ligger nord for Tysfjorden/Hellemofjorden i Nordland fylke.","fra og med":45179,"til og med":45366,"Kategori":"Hønsefugler"},{"Art":"Fjellrype","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45179,"til og med":45350,"Kategori":"Hønsefugler"},{"Art":"Fjellrype","Område":"Troms og Finnmark fylke og Narvik og Evenes kommuner, samt den delen av Hamarøy kommune som ligger nord for Tysfjorden/Hellemofjorden i Nordland fylke.","fra og med":45179,"til og med":45366,"Kategori":"Hønsefugler"},{"Art":"Enkeltbekkasin","Område":"Hele landet.","fra og med":45159,"til og med":45230,"Kategori":"Vadere"},{"Art":"Rugde","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Vadere"},{"Art":"Ringdue","Område":"Hele landet med unntak av Troms og Finnmark fylke hvor arten er fredet.","fra og med":45159,"til og med":45283,"Kategori":"Duefugler"},{"Art":"Gråtrost","Område":"Hele landet.","fra og med":45148,"til og med":45283,"Kategori":"Spurvefugler"},{"Art":"Nøtteskrike","Område":"Hele landet med unntak av Troms og Finnmark og Nordland fylker hvor arten er fredet.","fra og med":45148,"til og med":45350,"Kategori":"Spurvefugler"},{"Art":"Skjære","Område":"Hele landet.","fra og med":45148,"til og med":45350,"Kategori":"Spurvefugler"},{"Art":"Kråke","Område":"Hele landet.","fra og med":45122,"til og med":45382,"Kategori":"Spurvefugler"},{"Art":"Ravn","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45148,"til og med":45350,"Kategori":"Spurvefugler"},{"Art":"","Område":"Troms og Finnmark fylke.","fra og med":45148,"til og med":45366,"Kategori":"Spurvefugler"},{"Art":"Hare","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45179,"til og med":45350,"Kategori":"Haredyr"},{"Art":"Hare","Område":"Troms og Finnmark fylke og Narvik og Evenes kommuner, samt den delen av Hamarøy kommune som ligger nord for Tysfjorden/Hellemofjorden i Nordland fylke.","fra og med":45179,"til og med":45366,"Kategori":"Haredyr"},{"Art":"Ekorn","Område":"Hele landet.","fra og med":45231,"til og med":45366,"Kategori":"Gnagere"},{"Art":"Bever","Område":"I de kommunene hvor lokal forskrift åpner for beverjakt.","fra og med":45200,"til og med":45412,"Kategori":"Gnagere"},{"Art":"Rødrev","Område":"Hele landet.","fra og med":45122,"til og med":45397,"Kategori":"Rovdyr"},{"Art":"Røyskatt","Område":"Hele landet.","fra og med":45159,"til og med":45366,"Kategori":"Rovdyr"},{"Art":"Mår","Område":"Hele landet.","fra og med":45231,"til og med":45366,"Kategori":"Rovdyr"},{"Art":"Grevling","Område":"Hele landet.","fra og med":45159,"til og med":44957,"Kategori":"Rovdyr"},{"Art":"Gaupe","Område":"Hele landet. Jakt er kun tillatt i de områdene der rovviltnemnden/Miljødirektoratet har fastsatt kvote eller tillatt kvotefri jakt på gaupe (jf. forskrift 18. mars 2005 nr. 242 om forvaltning av rovvilt). Rovviltnemnden kan fastsette en kortere jakttid dersom særlige forhold tilsier det.","fra og med":44958,"til og med":45016,"Kategori":"Rovdyr"},{"Art":"Hjort","Område":"I de kommunene hvor lokal forskrift åpner for hjortejakt.","fra og med":45170,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Elg","Område":"I de kommunene hvor lokal forskrift åpner for elgjakt, med det unntaket som nevnes nedenfor.","fra og med":45194,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Elg","Område":"Kautokeino og Karasjok kommuner.","fra og med":45170,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Rådyr","Område":"I de kommunene hvor lokal forskrift åpner for rådyrjakt.","fra og med":45194,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Voksen rådyrbukk","Område":"I de kommunene hvor lokal forskrift åpner for rådyrjakt.","fra og med":45148,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Villrein","Område":"Hele landet (alle villreinområder) med det unntaket som nevnes nedenfor.","fra og med":45158,"til og med":45199,"Kategori":"Hjortevilt"},{"Art":"Villrein","Område":"Hardangervidda villreinområde sør for riksveg 7 i 2022 og 2023.","fra og med":45153,"til og med":45199,"Kategori":"Hjortevilt"},{"Art":"Kanadagås","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45148,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Kanadagås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Stripegås","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45148,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Stripegås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Knoppand (moskusand)","Område":"Hele landet.","fra og med":45159,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Mandarinand","Område":"Hele landet.","fra og med":45159,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Stivhaleand","Område":"Hele landet.","fra og med":45159,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Fasan","Område":"Hele landet.","fra og med":45200,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Sørhare","Område":"Hele landet.","fra og med":45179,"til og med":45350,"Kategori":"Fremmede/introduserte arter"},{"Art":"Villtlevende kanin","Område":"Hele landet.","fra og med":45179,"til og med":45350,"Kategori":"Fremmede/introduserte arter"},{"Art":"Bisam (bisamrotte)","Område":"Hele landet.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Mårhund","Område":"Hele landet.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Vaskebjørn","Område":"Hele landet.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Villmink","Område":"Hele landet.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Villsvin","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Villsvin","Område":"Sugge som har diende unger er fredet, men ungene er jaktbare hele året.","fra og med":"","til og med":"","Kategori":"Fremmede/introduserte arter"},{"Art":"Dåhjort og muflon","Område":"Hele landet.","fra og med":45194,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Dåhjort og muflon","Område":"Hele landet.","fra og med":45194,"til og med":45283,"Kategori":"Fremmede/introduserte arter"}]}'
+	let jObject = JSON.parse(inputString);
+	
+	//console.log(jObject.perioder);
+	
+	let game = new Object();
+	
+	let categories = [];
+	
+	
+	
+	for(let i = 0; i<jObject.perioder.length; i++){
+		//console.log(i);
+		let lastCategory = categories[categories.length - 1]; 
+		
+	
+		if(categories.length == 0 || jObject.perioder[i]['Kategori'] != lastCategory.categoryName){
+			//console.log("første kategori");
+			let cat = new Object();
+			cat.categoryName = jObject.perioder[i]['Kategori'];
+			cat.species = [];
+			categories.push(cat);
+			
+			lastCategory = categories[categories.length - 1]; 
+		}
+		
+		let lastSpeciment = lastCategory.species[lastCategory.species.length - 1];
+		
+		if(lastCategory.species.length == 0 || jObject.perioder[i]['Art'] != lastSpeciment.specimentName ){
+			let speciment = new Object();
+			speciment.specimentName = jObject.perioder[i]['Art'];
+			speciment.seasons = [];
+			categories[categories.length - 1].species.push(speciment);
+		
+			lastSpeciment = lastCategory.species[lastCategory.species.length - 1];
+		}
+		
+		//console.log(lastSpeciment);
+		
+		//let lastSeason = lastSpeciment.seasons[lastSpeciment.seasons.length - 1];
+			
+			let sD = convertDate(jObject.perioder[i]['fra og med']);
+			let eD = convertDate(jObject.perioder[i]['til og med']);
+			let desc = jObject.perioder[i]['Område'];
+			
+			
+			
+			let season = new Season(sD,eD, desc);
+			
+			
+			//console.log(inSeason(season.startDate,season.endDate));
+			
+			
+			
+			
+			
+			lastSpeciment.seasons.push(season);
+		
+		
+			
+		}
+		
+	
+	
+	animals = categories;
+	console.log(animals);
+	drawAccordion();
+	
+	
+	
+	}
+	
+	
+	
+	
+	function drawAccordion(){
+		
+		let accordion = document.createElement("div");
+		accordion.className = "accordion accordion-flush";
+		accordion.setAttribute("id", "accordionFlushExample");
+		contentContainer.appendChild(accordion);
+		
+		for (let x in animals){
+			console.log(animals[x].categoryName);
+			let accItem = document.createElement("div");
+			accItem.className = "accordion-item";
+			accordion.appendChild(accItem);
+			
+			let accItemHeader = document.createElement("h3");
+			accItemHeader.className = "accordion-header";
+			accItem.appendChild(accItemHeader);
+			
+			let btn = document.createElement("button");
+			btn.className = "accordion-button collapsed";
+			btn.setAttribute("type", "button");
+			btn.setAttribute("data-bs-toggle", "collapse");
+			btn.setAttribute("data-bs-target", "#flush-collapse" + x);
+			btn.setAttribute("aria-expanded", "false");
+			btn.setAttribute("aria-controls", "flush-collapse" + x);
+			btn.innerHTML = animals[x].categoryName;
+			accItemHeader.appendChild(btn);
+			
+			let accBody = document.createElement("div");
+			accBody.setAttribute("id", "flush-collapse" + x);
+			accBody.setAttribute("class", "accordion-collapse collapse");
+			accBody.setAttribute("aria-labelledby", "flush-heading" + x);
+			accBody.setAttribute("data-bs-parent", "#accordionFlushExample");
+			accItem.appendChild(accBody);
+			
+			let accBodyContent = document.createElement("div");
+			accBodyContent.setAttribute("class", "accordion-body");
+			//accBodyContent.innerHTML = animals[x].species[0];
+			accBody.appendChild(accBodyContent);
+			
+			let subAccordion = document.createElement("div");
+			subAccordion.setAttribute("class", "accordion accordion-flush");
+			subAccordion.setAttribute("id", "sub-accordionFlushExample");
+			accBodyContent.appendChild(subAccordion);
+			
+			for (let y in animals[x].species){
+				let subAccItem = document.createElement("div");
+				subAccItem.className = "accordion-item";
+				subAccordion.appendChild(subAccItem);
+				
+				let subAccItemHeader = document.createElement("h3");
+				subAccItemHeader.className = "accordion-header";
+				subAccItem.appendChild(subAccItemHeader);
+			
+				let subBtn = document.createElement("button");
+				subBtn.className = "accordion-button collapsed";
+				subBtn.setAttribute("type", "button");
+				subBtn.setAttribute("data-bs-toggle", "collapse");
+				subBtn.setAttribute("data-bs-target", "#sub-flush-collapse" + y);
+				subBtn.setAttribute("aria-expanded", "false");
+				subBtn.setAttribute("aria-controls", "flush-collapse" + y);
+				subBtn.innerHTML = animals[x].species[y].specimentName;
+				subAccItemHeader.appendChild(subBtn);
+			
+				let subAccBody = document.createElement("div");
+				subAccBody.setAttribute("id", "sub-flush-collapse" + y);
+				subAccBody.setAttribute("class", "accordion-collapse collapse");
+				subAccBody.setAttribute("aria-labelledby", "flush-heading" + y);
+				subAccBody.setAttribute("data-bs-parent", "#sub-accordionFlushExample");
+				subAccItem.appendChild(subAccBody);
+				
+				let subAccBodyContent = document.createElement("div");
+				subAccBodyContent.setAttribute("class", "accordion-body");
+				//accBodyContent.innerHTML = animals[x].species[0];
+				subAccBody.appendChild(subAccBodyContent);
+				
+				let li = document.createElement("ul");
+				li.setAttribute("class", "list-group list-group-horizontal");
+				let it = document.createElement("li");
+				it.setAttribute("class", "list-group-item");
+				it.innerHTML = "Fra og med";
+				//li.appendChild(it);
+				it.innerHTML = "Til og med";
+				//li.appendChild(it);
+					
+				let cont = document.createElement("div");
+				cont.setAttribute("class", "container");
+				subAccBodyContent.appendChild(cont);
+				
+				for (let z in animals[x].species[y].seasons){
+					
+					let row = document.createElement("div");
+					row.setAttribute("class", "row border-bottom");
+					
+					cont.appendChild(row);
+				
+					let sDate = document.createElement("div");
+					sDate.setAttribute("class", "col-2 alert-danger");
+					sDate.innerHTML = animals[x].species[y].seasons[z].getStart();
+					row.appendChild(sDate);
+					
+					let eDate = document.createElement("div");
+					eDate.setAttribute("class", "col-2 alert-danger");
+					eDate.innerHTML = animals[x].species[y].seasons[z].getEnd();
+					row.appendChild(eDate);
+					
+					let desc = document.createElement("div");
+					desc.setAttribute("class", "col-8 alert-danger");
+					desc.innerHTML = animals[x].species[y].seasons[z].getDescription();
+					row.appendChild(desc);
+				
+					if(animals[x].species[y].seasons[z].getInSeason()){
+						
+						sDate.setAttribute("class", "col-2 alert-success");
+						eDate.setAttribute("class", "col-2 alert-success");
+						desc.setAttribute("class", "col-8 alert-success");
+					}
+				
+					
+				}
+				
+			}
+			
+		}
+		
+	
+	}
+	
+	
+	
+	function inSeason(sD,eD){
+		
+		let now = new Date();
+		
+		if(now > sD && now < eD){
+		
+		return true;
+		}
+		else{
+		return false;
+		}
+	
+	}
+	
+	
+	
+	
+	
+	</script>
+  </body>
+</html>
