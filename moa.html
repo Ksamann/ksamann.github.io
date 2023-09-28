@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Moa @ meters</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.0.0/dist/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+  </head>
+  <body>
+	<script src="moa.js"></script>
+    <label for="meters" id="lblMeters">Avstand i meter: 100</label>
+    <input type="range" id="meters" min="1" max="1000" step="1" value="100" style="width: 100%"/>
+
+    <label for="moa" id="lblMoa">Antall MOA: 1</label><br/>
+    <input type="range" id="moa" min="0.25" max="20" step="0.25" value="1" style="width: 50%"/><br/><hr/>
+    <table class="table">
+        <tr>
+            <td>MOA</td>
+            <td>Meter</td>
+            <td>CM</td>
+        </tr>
+        <tr>
+            <td id="Moa"></td>
+            <td id="Meter"></td>
+            <td id="Cm"></td>
+        </tr>
+    </table>
+    <p id="result" style="width: 100%; text-align: center;"></p>
+    <script>
+        let range = document.getElementById("meters");
+        let rangeLabel = document.getElementById("lblMeters");
+
+        let moa = document.getElementById("moa");
+        let moaLabel = document.getElementById("lblMoa");
+
+        let tblMoa = document.getElementById("Moa");
+        let tblMeter = document.getElementById("Meter");
+        let tblCm = document.getElementById("Cm");
+
+        let result = getCM(moa.value, range.value);
+        tblMoa.innerHTML = result.moa;
+        tblMeter.innerHTML = result.meters;
+        tblCm.innerHTML = result.cm;
+
+        range.oninput = function(){
+            rangeLabel.innerHTML = "Avstand i meter: " + range.value;
+            let result = getCM(moa.value, range.value);
+            tblMoa.innerHTML = result.moa;
+            tblMeter.innerHTML = result.meters;
+            tblCm.innerHTML = result.cm;
+        }
+
+        moa.oninput = function(){
+            moaLabel.innerHTML = "Antall MOA: " + moa.value;
+            let result = getCM(moa.value, range.value);
+            tblMoa.innerHTML = result.moa;
+            tblMeter.innerHTML = result.meters;
+            tblCm.innerHTML = result.cm;
+        }
+
+    </script>
+  </body>
+</html>
