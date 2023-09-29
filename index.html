@@ -226,9 +226,16 @@
 		if(dateFromExcel == ''){
 			return "------";
 		}
-	
+		let parts = dateFromExcel.split('-');
 		
-		let jsDate = new Date('"' + dateFromExcel.replace(/-/g, "/") + '"');
+	
+	
+		let formatforIOS = '"' + dateFromExcel.replace(/-/g, "/") + '"';
+		//console.log('"' + dateFromExcel + '"');
+		//console.log(formatforIOS);
+		
+		let jsDate = new Date(parts[0],parts[1]-1,parts[2]);
+		//let jsDate = new Date('"' + dateFromExcel.replace(/-/g, "/") + '"');
 		
 		let returnDate = new Date(jsDate.getTime() + 23.9999*3600000);
 		return jsDate;
