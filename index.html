@@ -1,51 +1,53 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <title>Kristian Sanne Andersen</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Jakttider</title>
-    <!-- Latest compiled and minified CSS -->
-	 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 
-	<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
+	  <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js" integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js" integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF" crossorigin="anonymous"></script>
-  </head>
-	<!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-51XYKFEHQT"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+    <style>
 
-  gtag('config', 'G-51XYKFEHQT');
-</script>
-  <body>
-  
-  
-  <div class="container alert-primary">
-  <div id="Header" class="row align-items-center">
-	<div class="col">
-		<h1 class="text-primary">Jakttider</h1>
-	</div>
-	<div class="col">
+    </style>
+  </head>
+<body>
+
+
+
+
+
+
+
+
+<!-- Main content: shift it to the right by 250 pixels when the sidebar is visible -->
+<div class="container bg-primary">
+	<h2 class="float-start">Jakttider</h2>
+
+ </div>
+	
+		
+	
+	<div class="float-end">
 		<h4>
 			<span id="DateLabel" class="align-middle badge rounded-pill bg-light text-muted">Test</span>
 		</h4>
 		
 	</div>
   
-  </div>
+ 
 	
-	<div id="DateBox">
-		
-	</div>
 	
-  </div>
+	
+ 
 	
 	<div id="Content" class="container">
 	
 	</div>
+	
+
+
 	<script>
 	
 	class Season{
@@ -70,7 +72,10 @@
 		}
 		getEnd(){
 			if(this.end instanceof Date){
-				return this.end.toLocaleDateString();
+			
+								
+				return addTime(this.end,82799).toLocaleDateString();
+				
 			}
 			else{
 				return "------";
@@ -135,6 +140,44 @@
 	
 	
 	}
+
+	class Category{
+
+		_name;
+		species;
+		_nrInSeason;
+		_nrOffSeason;
+		_statusCode;
+
+
+		constructor(name){
+		
+			this._name = name;
+			this.species = [];
+			this._nrInSeason = 0;
+			this._nrOffSeason = 0;
+
+		}
+
+		getName(){
+			return this._name;		
+		}
+	
+		getSpecies(){
+			return this.species;
+		}
+
+		addSpecie(animal){
+			this.species.push(animal);
+
+			//this._nrInSeason += animal.getNrInSeason();
+
+			if(animal.statusCode == 1){
+				this._nrInSeason += 1;
+			}
+		}
+
+	}
 	
 	let contentContainer = document.getElementById("Content");
 	
@@ -155,28 +198,7 @@
 		printLocalDateTime();
 	}
 	
-	function createLine(period){
-		
-		let line = document.createElement("div");
-		line.className = "card";
-		
-		let cardHead = document.createElement("h4");
-		cardHead.className = "card-title";
-		cardHead.innerHTML = period.Art;
-		line.appendChild(cardHead);
-		
-		let sDate = document.createElement("p");
-		sDate.className = "card-text";
-		sDate.innerHTML = "Fra og med: ";
-		sDate.innerHTML += convertDate(period['fra og med']).toLocaleDateString();
-		sDate.innerHTML += " til og med: ";
-		sDate.innerHTML += convertDate(period['til og med']).toLocaleDateString();
-		line.appendChild(sDate);
-		
-		
-		periodList.appendChild(line);
 	
-	}
 	
 	
 	//Print local date and time in header
@@ -191,18 +213,20 @@
 			return "------";
 		}
 	
-		let dayOffset = (70*365)+19;
-		let daysSinceStart = dateFromExcel - dayOffset;
-		let dayInMilliSec = 86400000;
-		let hourInMilliSec = 3600000;		
-		let convertedDate = daysSinceStart * dayInMilliSec;
 		
-		let returnDate = new Date(convertedDate - (hourInMilliSec * 2));
-		return returnDate;
+		let jsDate = new Date('"' + dateFromExcel + '"');
+		
+		let returnDate = new Date(jsDate.getTime() + 23.9999*3600000);
+		return jsDate;
+	}
+	
+	function addTime(date, seconds){
+		return new Date(date.getTime() + seconds*1000);
+	
 	}
 	
 	function populateList(){
-	let inputString = '{"perioder":[{"Art":"Toppskarv","Område":"Troms og Finnmark og Nordland fylker, og nord for Trondheimsfjorden i Trøndelag fylke.","fra og med":45200,"til og med":45260,"Kategori":"Skarver"},{"Art":"Storskarv","Område":"Kun ungfugl med hvit buk i saltvannslokaliteter i Viken, Oslo, Vestfold og Telemark og Agder fylker.","fra og med":45179,"til og med":45239,"Kategori":"Skarver"},{"Art":"Storskarv","Område":"Kun ungfugl med hvit buk i saltvannslokaliteter i Rogaland, Vestland, Møre og Romsdal, Trøndelag, Nordland og Troms og Finnmark fylker.","fra og med":45200,"til og med":45260,"Kategori":"Skarver"},{"Art":"Storskarv","Område":"Alle storskarv i ferskvannslokaliteter i Viken, Innlandet, Vestfold og Telemark, Agder, Rogaland og Vestland fylker.","fra og med":45148,"til og med":45283,"Kategori":"Skarver"},{"Art":"Kortnebbgås","Område":"Hele landet med de unntakene som nevnes nedenfor.","fra og med":45148,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Kortnebbgås","Område":"I tidligere Finnmark fylke er arten fredet.","fra og med":"","til og med":"","Kategori":"Andefugler"},{"Art":"Kortnebbgås","Område":"I tidligere Troms fylke og Nordland fylke nord for Rana og Rødøy kommuner.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Kortnebbgås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Grågås","Område":"Hele landet med de unntakene som nevnes nedenfor.","fra og med":45148,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Grågås","Område":"I tidligere Finnmark fylke er jakt kun tillatt i ytre fjordstrøk og kyst med følgende avgrensning: Nord for fylkesvei 98 fra Smalfjord i Vestertana og landområdet vest for Smalfjord og Tanafjorden til Børselv i Porsanger. Videre nordvest for en rett linje fra Børselv til Ytre Billefjord. Videre nord for E6 fra Ytre Billefjord i Porsanger til Rafsbotn i Alta. Herfra følger avgrensningen rett vest i en rett linje fra Rafsbotn til Talvik. Videre nord for E6 fra Talvik til grensen i tidligere Troms fylke og nordover langs den tidligere fylkesgrensen.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Grågås","Område":"I tidligere Troms fylke og Nordland fylke nord for Rana og Rødøy kommuner.","fra og med":45153,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Grågås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Brunnakke","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Brunnakke","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Krikkand","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Krikkand","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Stokkand","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45159,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Stokkand","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Toppand","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Kvinand","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Siland","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Laksand","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Svartand","Område":"Tidligere Østfold fylke.","fra og med":45179,"til og med":45283,"Kategori":"Andefugler"},{"Art":"Ærfugl","Område":"Kun hannfugl av ærfugl i Vestfold og Telemark fylke, tidligere Østfold, tidligere Buskerud og tidligere Aust-Agder fylker. Hver jeger kan felle inntil fem fugler per døgn, og inntil 25 fugler per jaktår.","fra og med":45200,"til og med":45260,"Kategori":"Andefugler"},{"Art":"Jerpe","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Hønsefugler"},{"Art":"Orrfugl","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Hønsefugler"},{"Art":"Storfugl","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Hønsefugler"},{"Art":"Lirype","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45179,"til og med":45350,"Kategori":"Hønsefugler"},{"Art":"Lirype","Område":"Troms og Finnmark fylke og Narvik og Evenes kommuner, samt den delen av Hamarøy kommune som ligger nord for Tysfjorden/Hellemofjorden i Nordland fylke.","fra og med":45179,"til og med":45366,"Kategori":"Hønsefugler"},{"Art":"Fjellrype","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45179,"til og med":45350,"Kategori":"Hønsefugler"},{"Art":"Fjellrype","Område":"Troms og Finnmark fylke og Narvik og Evenes kommuner, samt den delen av Hamarøy kommune som ligger nord for Tysfjorden/Hellemofjorden i Nordland fylke.","fra og med":45179,"til og med":45366,"Kategori":"Hønsefugler"},{"Art":"Enkeltbekkasin","Område":"Hele landet.","fra og med":45159,"til og med":45230,"Kategori":"Vadere"},{"Art":"Rugde","Område":"Hele landet.","fra og med":45179,"til og med":45283,"Kategori":"Vadere"},{"Art":"Ringdue","Område":"Hele landet med unntak av Troms og Finnmark fylke hvor arten er fredet.","fra og med":45159,"til og med":45283,"Kategori":"Duefugler"},{"Art":"Gråtrost","Område":"Hele landet.","fra og med":45148,"til og med":45283,"Kategori":"Spurvefugler"},{"Art":"Nøtteskrike","Område":"Hele landet med unntak av Troms og Finnmark og Nordland fylker hvor arten er fredet.","fra og med":45148,"til og med":45350,"Kategori":"Spurvefugler"},{"Art":"Skjære","Område":"Hele landet.","fra og med":45148,"til og med":45350,"Kategori":"Spurvefugler"},{"Art":"Kråke","Område":"Hele landet.","fra og med":45122,"til og med":45382,"Kategori":"Spurvefugler"},{"Art":"Ravn","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45148,"til og med":45350,"Kategori":"Spurvefugler"},{"Art":"Ravn","Område":"Troms og Finnmark fylke.","fra og med":45148,"til og med":45366,"Kategori":"Spurvefugler"},{"Art":"Hare","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45179,"til og med":45350,"Kategori":"Haredyr"},{"Art":"Hare","Område":"Troms og Finnmark fylke og Narvik og Evenes kommuner, samt den delen av Hamarøy kommune som ligger nord for Tysfjorden/Hellemofjorden i Nordland fylke.","fra og med":45179,"til og med":45366,"Kategori":"Haredyr"},{"Art":"Ekorn","Område":"Hele landet.","fra og med":45231,"til og med":45366,"Kategori":"Gnagere"},{"Art":"Bever","Område":"I de kommunene hvor lokal forskrift åpner for beverjakt.","fra og med":45200,"til og med":45412,"Kategori":"Gnagere"},{"Art":"Rødrev","Område":"Hele landet.","fra og med":45122,"til og med":45397,"Kategori":"Rovdyr"},{"Art":"Røyskatt","Område":"Hele landet.","fra og med":45159,"til og med":45366,"Kategori":"Rovdyr"},{"Art":"Mår","Område":"Hele landet.","fra og med":45231,"til og med":45366,"Kategori":"Rovdyr"},{"Art":"Grevling","Område":"Hele landet.","fra og med":45159,"til og med":44957,"Kategori":"Rovdyr"},{"Art":"Gaupe","Område":"Hele landet. Jakt er kun tillatt i de områdene der rovviltnemnden/Miljødirektoratet har fastsatt kvote eller tillatt kvotefri jakt på gaupe (jf. forskrift 18. mars 2005 nr. 242 om forvaltning av rovvilt). Rovviltnemnden kan fastsette en kortere jakttid dersom særlige forhold tilsier det.","fra og med":44958,"til og med":45016,"Kategori":"Rovdyr"},{"Art":"Hjort","Område":"I de kommunene hvor lokal forskrift åpner for hjortejakt.","fra og med":45170,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Elg","Område":"I de kommunene hvor lokal forskrift åpner for elgjakt, med det unntaket som nevnes nedenfor.","fra og med":45194,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Elg","Område":"Kautokeino og Karasjok kommuner.","fra og med":45170,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Rådyr","Område":"I de kommunene hvor lokal forskrift åpner for rådyrjakt.","fra og med":45194,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Voksen rådyrbukk","Område":"I de kommunene hvor lokal forskrift åpner for rådyrjakt.","fra og med":45148,"til og med":45283,"Kategori":"Hjortevilt"},{"Art":"Villrein","Område":"Hele landet (alle villreinområder) med det unntaket som nevnes nedenfor.","fra og med":45158,"til og med":45199,"Kategori":"Hjortevilt"},{"Art":"Villrein","Område":"Hardangervidda villreinområde sør for riksveg 7 i 2022 og 2023.","fra og med":45153,"til og med":45199,"Kategori":"Hjortevilt"},{"Art":"Kanadagås","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45148,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Kanadagås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Stripegås","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45148,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Stripegås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":45179,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Knoppand (moskusand)","Område":"Hele landet.","fra og med":45159,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Mandarinand","Område":"Hele landet.","fra og med":45159,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Stivhaleand","Område":"Hele landet.","fra og med":45159,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Fasan","Område":"Hele landet.","fra og med":45200,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Sørhare","Område":"Hele landet.","fra og med":45179,"til og med":45350,"Kategori":"Fremmede/introduserte arter"},{"Art":"Villtlevende kanin","Område":"Hele landet.","fra og med":45179,"til og med":45350,"Kategori":"Fremmede/introduserte arter"},{"Art":"Bisam (bisamrotte)","Område":"Hele landet.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Mårhund","Område":"Hele landet.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Vaskebjørn","Område":"Hele landet.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Villmink","Område":"Hele landet.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Villsvin","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":45017,"til og med":45382,"Kategori":"Fremmede/introduserte arter"},{"Art":"Villsvin","Område":"Sugge som har diende unger er fredet, men ungene er jaktbare hele året.","fra og med":"","til og med":"","Kategori":"Fremmede/introduserte arter"},{"Art":"Dåhjort og muflon","Område":"Hele landet.","fra og med":45194,"til og med":45283,"Kategori":"Fremmede/introduserte arter"},{"Art":"Dåhjort og muflon","Område":"Hele landet.","fra og med":45194,"til og med":45283,"Kategori":"Fremmede/introduserte arter"}]}'
+	let inputString = '{"perioder":[{"Art":"Toppskarv","Område":"Troms og Finnmark og Nordland fylker, og nord for Trondheimsfjorden i Trøndelag fylke.","fra og med":"2023-10-01","til og med":"2023-11-30","Kategori":"Skarver"},{"Art":"Storskarv","Område":"Kun ungfugl med hvit buk i saltvannslokaliteter i Viken, Oslo, Vestfold og Telemark og Agder fylker.","fra og med":"2023-09-10","til og med":"2023-11-09","Kategori":"Skarver"},{"Art":"Storskarv","Område":"Kun ungfugl med hvit buk i saltvannslokaliteter i Rogaland, Vestland, Møre og Romsdal, Trøndelag, Nordland og Troms og Finnmark fylker.","fra og med":"2023-10-01","til og med":"2023-11-30","Kategori":"Skarver"},{"Art":"Storskarv","Område":"Alle storskarv i ferskvannslokaliteter i Viken, Innlandet, Vestfold og Telemark, Agder, Rogaland og Vestland fylker.","fra og med":"2023-08-10","til og med":"2023-12-23","Kategori":"Skarver"},{"Art":"Kortnebbgås","Område":"Hele landet med de unntakene som nevnes nedenfor.","fra og med":"2023-08-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Kortnebbgås","Område":"I tidligere Finnmark fylke er arten fredet.","fra og med":"","til og med":"","Kategori":"Andefugler"},{"Art":"Kortnebbgås","Område":"I tidligere Troms fylke og Nordland fylke nord for Rana og Rødøy kommuner.","fra og med":"2023-08-21","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Kortnebbgås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Grågås","Område":"Hele landet med de unntakene som nevnes nedenfor.","fra og med":"2023-08-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Grågås","Område":"I tidligere Finnmark fylke er jakt kun tillatt i ytre fjordstrøk og kyst med følgende avgrensning: Nord for fylkesvei 98 fra Smalfjord i Vestertana og landområdet vest for Smalfjord og Tanafjorden til Børselv i Porsanger. Videre nordvest for en rett linje fra Børselv til Ytre Billefjord. Videre nord for E6 fra Ytre Billefjord i Porsanger til Rafsbotn i Alta. Herfra følger avgrensningen rett vest i en rett linje fra Rafsbotn til Talvik. Videre nord for E6 fra Talvik til grensen i tidligere Troms fylke og nordover langs den tidligere fylkesgrensen.","fra og med":"2023-08-21","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Grågås","Område":"I tidligere Troms fylke og Nordland fylke nord for Rana og Rødøy kommuner.","fra og med":"2023-08-15","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Grågås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Brunnakke","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-08-21","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Brunnakke","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Krikkand","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-08-21","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Krikkand","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Stokkand","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-08-21","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Stokkand","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Toppand","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Kvinand","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Siland","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Laksand","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Svartand","Område":"Tidligere Østfold fylke.","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Andefugler"},{"Art":"Ærfugl","Område":"Kun hannfugl av ærfugl i Vestfold og Telemark fylke, tidligere Østfold, tidligere Buskerud og tidligere Aust-Agder fylker. Hver jeger kan felle inntil fem fugler per døgn, og inntil 25 fugler per jaktår.","fra og med":"2023-10-01","til og med":"2023-11-30","Kategori":"Andefugler"},{"Art":"Jerpe","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Hønsefugler"},{"Art":"Orrfugl","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Hønsefugler"},{"Art":"Storfugl","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Hønsefugler"},{"Art":"Lirype","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-09-10","til og med":"2024-02-29","Kategori":"Hønsefugler"},{"Art":"Lirype","Område":"Troms og Finnmark fylke og Narvik og Evenes kommuner, samt den delen av Hamarøy kommune som ligger nord for Tysfjorden/Hellemofjorden i Nordland fylke.","fra og med":"2023-09-10","til og med":"2024-03-15","Kategori":"Hønsefugler"},{"Art":"Fjellrype","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-09-10","til og med":"2024-02-29","Kategori":"Hønsefugler"},{"Art":"Fjellrype","Område":"Troms og Finnmark fylke og Narvik og Evenes kommuner, samt den delen av Hamarøy kommune som ligger nord for Tysfjorden/Hellemofjorden i Nordland fylke.","fra og med":"2023-09-10","til og med":"2024-03-15","Kategori":"Hønsefugler"},{"Art":"Enkeltbekkasin","Område":"Hele landet.","fra og med":"2023-08-21","til og med":"2023-10-31","Kategori":"Vadere"},{"Art":"Rugde","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Vadere"},{"Art":"Ringdue","Område":"Hele landet med unntak av Troms og Finnmark fylke hvor arten er fredet.","fra og med":"2023-08-21","til og med":"2023-12-23","Kategori":"Duefugler"},{"Art":"Gråtrost","Område":"Hele landet.","fra og med":"2023-08-10","til og med":"2023-12-23","Kategori":"Spurvefugler"},{"Art":"Nøtteskrike","Område":"Hele landet med unntak av Troms og Finnmark og Nordland fylker hvor arten er fredet.","fra og med":"2023-08-10","til og med":"2024-02-29","Kategori":"Spurvefugler"},{"Art":"Skjære","Område":"Hele landet.","fra og med":"2023-08-10","til og med":"2024-02-29","Kategori":"Spurvefugler"},{"Art":"Kråke","Område":"Hele landet.","fra og med":"2023-07-15","til og med":"2024-03-31","Kategori":"Spurvefugler"},{"Art":"Ravn","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-08-10","til og med":"2024-02-29","Kategori":"Spurvefugler"},{"Art":"Ravn","Område":"Troms og Finnmark fylke.","fra og med":"2023-08-10","til og med":"2024-03-15","Kategori":"Spurvefugler"},{"Art":"Hare","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-09-10","til og med":"2024-02-29","Kategori":"Haredyr"},{"Art":"Hare","Område":"Troms og Finnmark fylke og Narvik og Evenes kommuner, samt den delen av Hamarøy kommune som ligger nord for Tysfjorden/Hellemofjorden i Nordland fylke.","fra og med":"2023-09-10","til og med":"2024-03-15","Kategori":"Haredyr"},{"Art":"Ekorn","Område":"Hele landet.","fra og med":"2023-11-01","til og med":"2024-03-15","Kategori":"Gnagere"},{"Art":"Bever","Område":"I de kommunene hvor lokal forskrift åpner for beverjakt.","fra og med":"2023-10-01","til og med":"2024-04-30","Kategori":"Gnagere"},{"Art":"Rødrev","Område":"Hele landet.","fra og med":"2023-07-15","til og med":"2024-04-15","Kategori":"Rovdyr"},{"Art":"Røyskatt","Område":"Hele landet.","fra og med":"2023-08-21","til og med":"2024-03-15","Kategori":"Rovdyr"},{"Art":"Mår","Område":"Hele landet.","fra og med":"2023-11-01","til og med":"2024-03-15","Kategori":"Rovdyr"},{"Art":"Grevling","Område":"Hele landet.","fra og med":"2023-08-21","til og med":"2024-01-31","Kategori":"Rovdyr"},{"Art":"Gaupe","Område":"Hele landet. Jakt er kun tillatt i de områdene der rovviltnemnden/Miljødirektoratet har fastsatt kvote eller tillatt kvotefri jakt på gaupe (jf. forskrift 18. mars 2005 nr. 242 om forvaltning av rovvilt). Rovviltnemnden kan fastsette en kortere jakttid dersom særlige forhold tilsier det.","fra og med":"2024-02-01","til og med":"2024-03-31","Kategori":"Rovdyr"},{"Art":"Hjort","Område":"I de kommunene hvor lokal forskrift åpner for hjortejakt.","fra og med":"2023-09-01","til og med":"2023-12-23","Kategori":"Hjortevilt"},{"Art":"Elg","Område":"I de kommunene hvor lokal forskrift åpner for elgjakt, med det unntaket som nevnes nedenfor.","fra og med":"2023-09-25","til og med":"2023-12-23","Kategori":"Hjortevilt"},{"Art":"Elg","Område":"Kautokeino og Karasjok kommuner.","fra og med":"2023-09-01","til og med":"2023-12-23","Kategori":"Hjortevilt"},{"Art":"Rådyr","Område":"I de kommunene hvor lokal forskrift åpner for rådyrjakt.","fra og med":"2023-09-25","til og med":"2023-12-23","Kategori":"Hjortevilt"},{"Art":"Voksen rådyrbukk","Område":"I de kommunene hvor lokal forskrift åpner for rådyrjakt.","fra og med":"2023-08-10","til og med":"2023-12-23","Kategori":"Hjortevilt"},{"Art":"Villrein","Område":"Hele landet (alle villreinområder) med det unntaket som nevnes nedenfor.","fra og med":"2023-08-20","til og med":"2023-09-30","Kategori":"Hjortevilt"},{"Art":"Villrein","Område":"Hardangervidda villreinområde sør for riksveg 7 i 2022 og 2023.","fra og med":"2023-08-15","til og med":"2023-09-30","Kategori":"Hjortevilt"},{"Art":"Kanadagås","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-08-10","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"},{"Art":"Kanadagås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"},{"Art":"Stripegås","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-08-10","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"},{"Art":"Stripegås","Område":"Den frie jakten på hav og fjord, jf. Viltloven paragraf 32, fra svenskegrensen til og med Agder fylke","fra og med":"2023-09-10","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"},{"Art":"Knoppand (moskusand)","Område":"Hele landet.","fra og med":"2023-08-21","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"},{"Art":"Mandarinand","Område":"Hele landet.","fra og med":"2023-08-21","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"},{"Art":"Stivhaleand","Område":"Hele landet.","fra og med":"2023-08-21","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"},{"Art":"Fasan","Område":"Hele landet.","fra og med":"2023-10-01","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"},{"Art":"Sørhare","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2024-02-29","Kategori":"Fremmede/introduserte arter"},{"Art":"Villtlevende kanin","Område":"Hele landet.","fra og med":"2023-09-10","til og med":"2024-02-29","Kategori":"Fremmede/introduserte arter"},{"Art":"Bisam (bisamrotte)","Område":"Hele landet.","fra og med":"2023-04-01","til og med":"2024-03-31","Kategori":"Fremmede/introduserte arter"},{"Art":"Mårhund","Område":"Hele landet.","fra og med":"2023-04-01","til og med":"2024-03-31","Kategori":"Fremmede/introduserte arter"},{"Art":"Vaskebjørn","Område":"Hele landet.","fra og med":"2023-04-01","til og med":"2024-03-31","Kategori":"Fremmede/introduserte arter"},{"Art":"Villmink","Område":"Hele landet.","fra og med":"2023-04-01","til og med":"2024-03-31","Kategori":"Fremmede/introduserte arter"},{"Art":"Villsvin","Område":"Hele landet med det unntaket som nevnes nedenfor.","fra og med":"2023-04-01","til og med":"2024-03-31","Kategori":"Fremmede/introduserte arter"},{"Art":"Villsvin","Område":"Sugge som har diende unger er fredet, men ungene er jaktbare hele året.","fra og med":"","til og med":"","Kategori":"Fremmede/introduserte arter"},{"Art":"Dåhjort og muflon","Område":"Hele landet.","fra og med":"2023-09-25","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"},{"Art":"Dåhjort og muflon","Område":"Hele landet.","fra og med":"2023-09-25","til og med":"2023-12-23","Kategori":"Fremmede/introduserte arter"}]}'
 	let jObject = JSON.parse(inputString);
 	
 	//console.log(jObject.perioder);
@@ -218,11 +242,11 @@
 		let lastCategory = categories[categories.length - 1]; 
 		
 	
-		if(categories.length == 0 || jObject.perioder[i]['Kategori'] != lastCategory.categoryName){
+		if(categories.length == 0 || jObject.perioder[i]['Kategori'] != lastCategory.getName()){
 			//console.log("første kategori");
-			let cat = new Object();
-			cat.categoryName = jObject.perioder[i]['Kategori'];
-			cat.species = [];
+			let cat = new Category(jObject.perioder[i]['Kategori']);
+			//cat.categoryName = jObject.perioder[i]['Kategori'];
+			//cat.species = [];
 			categories.push(cat);
 			
 			lastCategory = categories[categories.length - 1]; 
@@ -233,7 +257,7 @@
 		if(lastCategory.species.length == 0 || jObject.perioder[i]['Art'] != lastSpeciment.name ){
 					
 			let animal = new Animal(jObject.perioder[i]['Art']);
-			lastCategory.species.push(animal);
+			lastCategory.addSpecie(animal);
 		
 			lastSpeciment = lastCategory.species[lastCategory.species.length - 1];
 		}
@@ -244,6 +268,7 @@
 			
 			let sD = convertDate(jObject.perioder[i]['fra og med']);
 			let eD = convertDate(jObject.perioder[i]['til og med']);
+			//eD = addTime(eD,86399);
 			let desc = jObject.perioder[i]['Område'];
 			
 			
@@ -284,7 +309,7 @@
 		contentContainer.appendChild(accordion);
 		
 		for (let x in animals){
-			console.log(animals[x].categoryName);
+			console.log(animals[x].getName());
 			let accItem = document.createElement("div");
 			accItem.className = "accordion-item";
 			accordion.appendChild(accItem);
@@ -300,7 +325,7 @@
 			btn.setAttribute("data-bs-target", "#flush-collapse" + x);
 			btn.setAttribute("aria-expanded", "false");
 			btn.setAttribute("aria-controls", "flush-collapse" + x);
-			btn.innerHTML = animals[x].categoryName;
+			btn.innerHTML = animals[x].getName();
 			accItemHeader.appendChild(btn);
 			
 			let accBody = document.createElement("div");
@@ -443,5 +468,6 @@
 	
 	
 	</script>
-  </body>
+
+</body>
 </html>
