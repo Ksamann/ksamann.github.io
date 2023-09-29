@@ -228,7 +228,7 @@
 		}
 	
 		
-		let jsDate = new Date('"' + dateFromExcel + '"');
+		let jsDate = new Date('"' + dateFromExcel.replace(/-/g, "/") + '"');
 		
 		let returnDate = new Date(jsDate.getTime() + 23.9999*3600000);
 		return jsDate;
