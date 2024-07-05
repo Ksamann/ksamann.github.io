@@ -122,7 +122,7 @@ function finish() {
   reportBtn.innerHTML = 'Report by e-mail';
   reportBtn.onclick = function () {
     console.log('sent');
-    cardbody.innerHTML += "<h6 class='text-success'>Thanks!</h6>";
+    cardbody.innerHTML += "<h6 class='text-success'>Thanks!</br>Just hit refresh to go again!</h6>";
     //sendReport();
   };
   cardbody.appendChild(reportBtn);
