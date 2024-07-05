@@ -25,8 +25,8 @@ let path2 = [
 tripList.push(path2);
 
 let path3 = [
-  'Toyen',
-  'Ensjo',
+  'Tøyen',
+  'Ensjø',
   'Helsfyr',
   'Brynseng',
   'Hellerud',
