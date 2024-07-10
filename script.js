@@ -163,22 +163,22 @@ function sendReport() {
     if (item.travelTime != undefined) {
       data.push(item.travelTime.toLocaleTimeString());
     } else {
-      data.push('NaN');
+      data.push('N/A');
     }
     if (item.arrivalTime != undefined) {
       data.push(item.arrivalTime.toLocaleTimeString());
     } else {
-      data.push('NaN');
+      data.push('N/A');
     }
     if (item.dwellTime != undefined) {
       data.push(item.dwellTime.toLocaleTimeString());
     } else {
-      data.push('NaN');
+      data.push('N/A');
     }
     if (item.departureTime != undefined) {
       data.push(item.departureTime.toLocaleTimeString());
     } else {
-      data.push('NaN');
+      data.push('N/A');
     }
     refinedData.push(data);
   });
