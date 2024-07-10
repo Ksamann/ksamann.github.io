@@ -1,5 +1,3 @@
-console.log('Hello!');
-
 let tripList = [];
 let trip = [];
 let stationCounter = 0;
@@ -25,8 +23,8 @@ let path2 = [
 tripList.push(path2);
 
 let path3 = [
-  'Tøyen',
-  'Ensjø',
+  'Toyen',
+  'Ensjo',
   'Helsfyr',
   'Brynseng',
   'Hellerud',
@@ -69,7 +67,7 @@ class Stationstop {
 
   arrive() {
     this.arrivalTime = new Date().toLocaleTimeString();
-    console.log(trip);
+    //console.log(trip);
     updateTable();
   }
 }
@@ -81,11 +79,13 @@ function arrive(station) {
       station.arrivalTime - lastDeparture - 3600000
     );
   }
-  console.log(trip);
+  //console.log(trip);
   updateTable();
 }
 
 function start(triplist) {
+  let main = document.getElementById('Card');
+  main.innerHTML = '';
   makeTrip(tripList[triplist]);
   updateTable();
 }
@@ -95,14 +95,16 @@ function depart(station) {
   station.departureTime = stamp;
   lastDeparture = stamp;
   if (station.arrivalTime != undefined) {
-    station.dwellTime = new Date(station.departureTime - station.arrivalTime);
+    station.dwellTime = new Date(
+      station.departureTime - station.arrivalTime - 3600000
+    );
   }
-  console.log(trip);
-  console.log('count ' + stationCounter);
+  //console.log(trip);
+  //console.log('count ' + stationCounter);
   stationCounter++;
   updateTable();
   if (stationCounter == trip.length) {
-    console.log('finish');
+    //console.log('finish');
     finish();
   }
 }
@@ -111,27 +113,112 @@ function finish() {
   let card = document.createElement('div');
   card.setAttribute('class', 'card');
   let cardbody = document.createElement('div');
+  cardbody.setAttribute('id', 'CardBody');
   cardbody.setAttribute('class', 'card-body');
   cardbody.innerHTML = '<h5>Finished!</h5>';
   card.appendChild(cardbody);
 
-  let reportBtn = document.createElement('a');
-  let results = JSON.stringify(trip);
-  reportBtn.setAttribute('href', 'mailto:?subject=Time Study&body=' + results);
-  reportBtn.setAttribute('class', 'btn btn-primary');
-  reportBtn.innerHTML = 'Report by e-mail';
-  reportBtn.onclick = function () {
-    console.log('sent');
-    cardbody.innerHTML += "<h6 class='text-success'>Thanks!</br>Just hit refresh to go again!</h6>";
-    //sendReport();
-  };
-  cardbody.appendChild(reportBtn);
+  //let reportBtn = document.createElement('a');
+  //let results = JSON.stringify(trip);
+  //reportBtn.setAttribute('href', 'mailto:?subject=Time Study&body=' + results);
+  //reportBtn.setAttribute('class', 'btn btn-primary');
+  //reportBtn.innerHTML = 'Report by e-mail';
+  //reportBtn.onclick = function () {
+  //console.log('sent');
+  //cardbody.innerHTML += "<h6 class='text-success'>Thanks!</h6>";
+  //};
+  //cardbody.appendChild(reportBtn);
 
-  let main = document.getElementById('Main');
+  let main = document.getElementById('Card');
+  main.innerHTML = '';
   main.appendChild(card);
+  sendReport();
 }
 
-function sendReport() {}
+function sendReport() {
+  let headerInfo = [
+    'Time study report for date: ',
+    startTime.toLocaleDateString(),
+    '',
+    'Developed by: ',
+    'KSA',
+  ];
+  const titleKeys = [
+    'StationName',
+    'TravelTime',
+    'ArrivalTime',
+    'DwellTime',
+    'DepartureTime',
+  ];
+
+  const refinedData = [];
+  refinedData.push(headerInfo);
+  headerInfo = ['', '', '', '', ''];
+  refinedData.push(headerInfo);
+  refinedData.push(titleKeys);
+
+  trip.forEach((item) => {
+    let data = [];
+    data.push(item.name);
+    if (item.travelTime != undefined) {
+      data.push(item.travelTime.toLocaleTimeString());
+    } else {
+      data.push('NaN');
+    }
+    if (item.arrivalTime != undefined) {
+      data.push(item.arrivalTime.toLocaleTimeString());
+    } else {
+      data.push('NaN');
+    }
+    if (item.dwellTime != undefined) {
+      data.push(item.dwellTime.toLocaleTimeString());
+    } else {
+      data.push('NaN');
+    }
+    if (item.departureTime != undefined) {
+      data.push(item.departureTime.toLocaleTimeString());
+    } else {
+      data.push('NaN');
+    }
+    refinedData.push(data);
+  });
+
+  //console.log('this is the data: ' + refinedData);
+
+  let csvData = '';
+
+  refinedData.forEach((row) => {
+    csvData += row.join(';') + '\n';
+  });
+
+  //console.log(csvData);
+
+  const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8,' });
+  const objUrl = URL.createObjectURL(blob);
+
+  let cardBody = document.getElementById('CardBody');
+
+  const link = document.createElement('a');
+  link.setAttribute('href', objUrl);
+  link.setAttribute(
+    'download',
+    'TimeStudy_' + startTime.toLocaleString() + '.csv'
+  );
+  link.setAttribute('class', 'btn btn-primary');
+  link.textContent = 'Download CSV';
+
+  const sendBtn = document.createElement('a');
+  sendBtn.setAttribute('href', 'mailto:?subject=Time Study&body=' + csvData);
+  sendBtn.setAttribute('class', 'btn btn-primary');
+  sendBtn.textContent = 'Report by e-mail';
+  sendBtn.onclick = () => {
+    cardBody.innerHTML +=
+      "<h6 class='text-success'>Thanks! Hit refresh to go again!</h6>";
+  };
+
+  cardBody.appendChild(link);
+  cardBody.appendChild(sendBtn);
+}
 
 function makeTrip(path) {
   trip = [];
@@ -140,7 +227,7 @@ function makeTrip(path) {
     let station = new Stationstop(path[i]);
     trip.push(station);
   }
-  console.log(trip);
+  //console.log(trip);
 }
 
 function updateTable() {
@@ -226,7 +313,7 @@ function updateTable() {
         trip[i - 1].departureTime != undefined &&
         trip[i].arrivalTime == undefined
       ) {
-        console.log('disabled');
+        //console.log('disabled');
         departBtn.setAttribute('class', 'btn btn-success disabled');
       }
       departBtn.onclick = function () {
