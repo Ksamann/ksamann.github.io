@@ -10,7 +10,7 @@ let path1 = [
   'Karlsrud',
   'Lambertseter',
   'Munkelia',
-  'Bergkrystallen',
+  'Bergkrystallen'
 ];
 tripList.push(path1);
 
@@ -34,7 +34,7 @@ let path3 = [
   'Haugerud',
   'Trosterud',
   'Lindeberg',
-  'Furuset',
+  'Furuset'
 ];
 tripList.push(path3);
 
