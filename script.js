@@ -5,6 +5,7 @@ let startTime = new Date();
 let lastDeparture;
 
 let path1 = [
+  'Ryen',
   'Brattlikollen',
   'Karlsrud',
   'Lambertseter',
@@ -19,6 +20,7 @@ let path2 = [
   'Lambertseter',
   'Karlsrud',
   'Brattlikollen',
+   'Ryen'
 ];
 tripList.push(path2);
 
