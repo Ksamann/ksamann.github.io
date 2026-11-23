@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="no">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d1013">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>T-bane tidslogger</title>
+<title>Metro timing logger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
@@ -100,6 +100,10 @@ input,textarea{width:100%;min-height:52px;border-radius:12px;background:var(--su
 .linkbtn{font-weight:600;color:var(--hi);padding:6px 0;font-size:15px}
 
 .dock{position:sticky;bottom:0;z-index:3;margin-top:4px;padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--bg) 22%)}
+.cta:disabled{opacity:.4;cursor:default}
+.req{color:var(--warn);letter-spacing:.04em}
+.opt{letter-spacing:.04em;text-transform:none;font-weight:500}
+.warn{color:var(--warn)}
 .cta{width:100%;min-height:72px;border-radius:16px;background:var(--line);color:var(--ink);font-family:var(--f-display);font-weight:800;font-size:25px;letter-spacing:.06em;text-transform:uppercase}
 
 /* ---------- logging ---------- */
@@ -217,6 +221,7 @@ const I18N = {
     customLine:"Linjen er redigert på denne telefonen.",
     startNotTerminus:"Startstasjonen kan ikke være siste stasjon", endAfterStart:"Slutt må komme etter start i kjøreretningen",
     observer:"Registrator", train:"Tog / vognsett", note:"Notat", startLogging:"Start logging",
+    next:"Neste", tripDetails:"Turdetaljer", required:"påkrevd", optional:"valgfritt", nameRequired:"Skriv inn navnet ditt for å starte.", detailsHint:"Navnet huskes til neste tur.",
     end:"Avslutt", endQ:"Avslutte turen nå?", endHint:"Det du har logget, blir lagret. Du går videre til eksport.",
     keepLogging:"Fortsett logging", endTrip:"Avslutt tur",
     atStation:"Står på", readyAt:"Klar på", next:"Mot", dwell:"oppholdstid", run:"kjøretid", waiting:"venter på<br>første avgang",
@@ -249,6 +254,7 @@ const I18N = {
     customLine:"This line has been edited on this phone.",
     startNotTerminus:"The start can't be the last station", endAfterStart:"The end must come after the start in the direction of travel",
     observer:"Observer", train:"Train / unit", note:"Note", startLogging:"Start logging",
+    next:"Next", tripDetails:"Trip details", required:"required", optional:"optional", nameRequired:"Enter your name to start.", detailsHint:"Your name is remembered for the next trip.",
     end:"Finish", endQ:"Finish this trip now?", endHint:"Everything you've logged is saved. You'll go on to export.",
     keepLogging:"Keep logging", endTrip:"Finish trip",
     atStation:"At", readyAt:"Ready at", next:"Next", dwell:"dwell time", run:"run time", waiting:"waiting for<br>first departure",
@@ -280,9 +286,8 @@ let storageOk = true;
 function load(key, def){ try{ const v=localStorage.getItem(key); return v==null?def:JSON.parse(v); }catch(e){ storageOk=false; return def; } }
 function save(key, val){ try{ if(val==null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val)); }catch(e){ storageOk=false; } }
 
-const browserLang = (navigator.language||"").toLowerCase();
-let lang = load(K.lang, /^(nb|nn|no)\b/.test(browserLang) ? "no" : "en");
-if(!I18N[lang]) lang="no";
+let lang = load(K.lang, "en");
+if(!I18N[lang]) lang="en";
 const T = () => I18N[lang];
 
 let customLines = load(K.lines, {});
@@ -425,7 +430,7 @@ document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState=
    RENDER
    ===================================================================== */
 let tick=null;
-function go(screen){ S.screen=screen; S.confirmEnd=false; S.noteOpen=false; S.confirmDel=null; if(screen!=="setup") S.editing=null; draw(); window.scrollTo(0,0); }
+function go(screen){ S.screen=screen; S.confirmEnd=false; S.noteOpen=false; S.confirmDel=null; if(screen!=="setup") S.editing=null; draw(); if(screen!=="details") window.scrollTo(0,0); }
 function draw(){
   document.documentElement.lang = lang==="no"?"no":"en";
   document.title = T().appTitle;
@@ -433,7 +438,7 @@ function draw(){
   const ln = S.screen==="log"&&S.active ? S.active.line : S.screen==="done"&&viewTrip() ? viewTrip().line : S.line;
   setAccent(ln);
   wantWake(S.screen==="log");
-  ({setup:drawSetup, log:drawLog, done:drawDone, hist:drawHist})[S.screen]();
+  ({setup:drawSetup, details:drawDetails, log:drawLog, done:drawDone, hist:drawHist})[S.screen]();
 }
 const langToggle = () => `<div class="lang" role="group" aria-label="Språk / Language"><button data-lang="no" aria-pressed="${lang==="no"}">NO</button><button data-lang="en" aria-pressed="${lang==="en"}">EN</button></div>`;
 function bindCommon(){
@@ -469,13 +474,8 @@ function drawSetup(){
         return `<li class="${cls}"><button class="st" data-st="${i}"><i></i><span>${esc(s)}</span>${tag}</button></li>`;}).join("")}</ol>
       <div class="btnrow"><button class="linkbtn" id="edit">${t.editLine(S.line)}</button></div>`}
     </div>
-    <div class="field"><label class="label" for="obs">${t.observer}</label><input id="obs" value="${esc(S.observer)}" autocomplete="name"></div>
-    <div class="grid2">
-      <div class="field"><label class="label" for="train">${t.train}</label><input id="train" value="${esc(S.train)}" inputmode="numeric" autocomplete="off"></div>
-      <div class="field"><label class="label" for="tnote">${t.note}</label><input id="tnote" value="${esc(S.note)}" autocomplete="off"></div>
-    </div>
     ${storageOk?"":`<p class="hint" style="color:var(--warn)">${t.storageOff}</p>`}
-    <div class="dock"><button class="cta" id="go" ${S.editing?"disabled style=\"opacity:.4\"":""}>${t.startLogging}</button></div>
+    <div class="dock"><button class="cta" id="go" ${S.editing?"disabled":""}>${t.next} →</button></div>
   </section>`;
   bindCommon();
   app.querySelectorAll("[data-line]").forEach(b=>b.onclick=()=>{ S.line=b.dataset.line; S.dir=0; S.startIdx=0; S.endIdx=9999; S.pickMode="start"; S.editing=null; draw(); });
@@ -489,10 +489,33 @@ function drawSetup(){
   });
   const ed=$("#edit"); if(ed) ed.onclick=()=>{ S.editing=r.slice(); draw(); };
   if(S.editing) bindEditor();
-  $("#obs").oninput=e=>{ S.observer=e.target.value; save(K.observer,S.observer); };
+  $("#go").onclick=()=>go("details");
+}
+
+/* ---------- trip details ---------- */
+function drawDetails(){
+  const t=T(), r=setupRoute(), n=S.endIdx-S.startIdx;
+  const ok=()=>S.observer.trim().length>0;
+  app.innerHTML = `<section class="screen">
+    <div class="bar"><button class="iconbtn" data-go="setup" aria-label="${t.back}">←</button><div class="badge">${esc(S.line)}</div><h1>${t.tripDetails}</h1></div>
+    <div class="trip"><b>${esc(r[S.startIdx])} → ${esc(r[S.endIdx])}</b><span class="hint num">${t.segs(n)}</span></div>
+    <form id="df" class="screen" novalidate>
+      <div class="field"><label class="label" for="obs">${t.observer} <span class="req">· ${t.required}</span></label><input id="obs" value="${esc(S.observer)}" autocomplete="name" enterkeyhint="next" required></div>
+      <div class="field"><label class="label" for="train">${t.train} <span class="opt">· ${t.optional}</span></label><input id="train" value="${esc(S.train)}" inputmode="numeric" autocomplete="off" enterkeyhint="next"></div>
+      <div class="field"><label class="label" for="tnote">${t.note} <span class="opt">· ${t.optional}</span></label><input id="tnote" value="${esc(S.note)}" autocomplete="off" enterkeyhint="go"></div>
+      <p class="hint" id="dh">${ok()?t.detailsHint:`<span class="warn">${t.nameRequired}</span>`}</p>
+      <div class="dock"><button class="cta" id="go" type="submit" ${ok()?"":"disabled"}>${t.startLogging}</button></div>
+    </form>
+  </section>`;
+  bindCommon();
+  const upd=()=>{ $("#go").disabled=!ok(); $("#dh").innerHTML=ok()?t.detailsHint:`<span class="warn">${t.nameRequired}</span>`; };
+  $("#obs").oninput=e=>{ S.observer=e.target.value; save(K.observer,S.observer); upd(); };
   $("#train").oninput=e=>S.train=e.target.value;
   $("#tnote").oninput=e=>S.note=e.target.value;
-  $("#go").onclick=startTrip;
+  const order=["obs","train","tnote"];
+  order.forEach((id,i)=>$("#"+id).addEventListener("keydown",e=>{ if(e.key==="Enter" && i<order.length-1){ e.preventDefault(); $("#"+order[i+1]).focus(); } }));
+  $("#df").onsubmit=e=>{ e.preventDefault(); if(!ok()){ $("#obs").focus(); return; } startTrip(); };
+  setTimeout(()=>{ const f=$(ok()?"#train":"#obs"); if(f) f.focus(); }, 50);
 }
 function editorHTML(){
   const t=T();
