@@ -46,6 +46,8 @@ button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px soli
 .bar{display:flex;align-items:center;gap:10px;min-height:44px}
 .bar h1{font-family:var(--f-display);font-weight:700;font-size:22px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .iconbtn{min-width:44px;height:44px;border-radius:12px;background:var(--surface);display:grid;place-items:center;font-size:15px;font-weight:600;padding:0 14px}
+.bar h1.wrap{white-space:normal;line-height:1.05;font-size:21px}
+.helpbtn{color:var(--fg);text-decoration:none;font-family:var(--f-display);font-weight:800;font-size:20px;padding:0}
 .badge{width:40px;height:40px;border-radius:50%;background:var(--line);color:var(--ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:22px;flex:none}
 .lang{display:flex;background:var(--surface);border-radius:10px;padding:3px;gap:2px}
 .lang button{min-width:38px;height:38px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
@@ -211,7 +213,7 @@ const DEFAULT_LINES = {
    ===================================================================== */
 const I18N = {
   no:{
-    appTitle:"T-bane tidslogger", history:"Historikk", line:"Linje", direction:"Retning", towards:"Mot",
+    appTitle:"T-bane tidslogger", history:"Historikk", help:"Brukerhåndbok (engelsk)", line:"Linje", direction:"Retning", towards:"Mot",
     section:"Strekning", segs:n=>`${n} ${n===1?"strekning":"strekninger"}`,
     pickStart:"Velg start", pickEnd:"Velg slutt", tagStart:"START", tagEnd:"SLUTT", tagTerm:"ENDESTASJON",
     editLine:n=>`✎ Rediger linje ${n}`, editHint:"Rett navn, fjern eller sett inn stasjoner. Endringene lagres på denne telefonen.",
@@ -244,7 +246,7 @@ const I18N = {
     locale:"nb-NO", sep:";", dec:","
   },
   en:{
-    appTitle:"Metro timing logger", history:"History", line:"Line", direction:"Direction", towards:"Towards",
+    appTitle:"Metro timing logger", history:"History", help:"User guide", line:"Line", direction:"Direction", towards:"Towards",
     section:"Section", segs:n=>`${n} ${n===1?"leg":"legs"}`,
     pickStart:"Pick start", pickEnd:"Pick end", tagStart:"START", tagEnd:"END", tagTerm:"TERMINUS",
     editLine:n=>`✎ Edit line ${n}`, editHint:"Rename, remove or insert stations. Changes are saved on this phone.",
@@ -440,6 +442,7 @@ function draw(){
   wantWake(S.screen==="log");
   ({setup:drawSetup, details:drawDetails, log:drawLog, done:drawDone, hist:drawHist})[S.screen]();
 }
+const helpLink = () => `<a class="iconbtn helpbtn" href="tbane-guide.html" aria-label="${T().help}" title="${T().help}">?</a>`;
 const langToggle = () => `<div class="lang" role="group" aria-label="Språk / Language"><button data-lang="no" aria-pressed="${lang==="no"}">NO</button><button data-lang="en" aria-pressed="${lang==="en"}">EN</button></div>`;
 function bindCommon(){
   app.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{ lang=b.dataset.lang; save(K.lang,lang); draw(); });
@@ -452,7 +455,7 @@ function drawSetup(){
   S.endIdx=Math.min(S.endIdx, r.length-1); if(S.startIdx>=S.endIdx) S.startIdx=Math.max(0,S.endIdx-1);
   const n=S.endIdx-S.startIdx;
   app.innerHTML = `<section class="screen">
-    <div class="bar"><h1>${t.appTitle}</h1>${langToggle()}<button class="iconbtn" data-go="hist">${t.history}</button></div>
+    <div class="bar"><h1 class="wrap">${t.appTitle}</h1>${langToggle()}${helpLink()}<button class="iconbtn" data-go="hist">${t.history}</button></div>
     <div class="field"><span class="label">${t.line}</span>
       <div class="lines">${Object.entries(DEFAULT_LINES).map(([k,v])=>`<button style="--c:${v.color};--k:${v.ink}" aria-pressed="${k===S.line}" data-line="${k}">${k}</button>`).join("")}</div></div>
     <div class="field"><span class="label">${t.direction}</span>
@@ -671,7 +674,7 @@ function drawDone(){
 function drawHist(){
   const t=T();
   app.innerHTML = `<section class="screen">
-    <div class="bar"><button class="iconbtn" ${S.active?'data-go="log"':'data-go="setup"'} aria-label="${t.back}">←</button><h1>${t.history}</h1>${langToggle()}</div>
+    <div class="bar"><button class="iconbtn" ${S.active?'data-go="log"':'data-go="setup"'} aria-label="${t.back}">←</button><h1>${t.history}</h1>${langToggle()}${helpLink()}</div>
     ${S.trips.length?`<ul class="hist">${S.trips.map(trip=>{
       const tt=totals(trip), L=DEFAULT_LINES[trip.line]||DEFAULT_LINES["1"];
       const sub=[dateStr(trip.startedAt)+" "+clock(trip.startedAt).slice(0,5), trip.observer, t.segs(tt.legs)].filter(Boolean).map(esc).join(" · ");
