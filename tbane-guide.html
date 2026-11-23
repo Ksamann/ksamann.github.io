@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1013">
+<title>Metro timing logger – User guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#0d1013; --surface:#161a1f; --surface-2:#1f242b; --rule:#2a3139;
+  --fg:#eef1f4; --muted:#9aa3ad; --warn:#f0b43c; --hi:#4cc046;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{font-family:var(--f-body);font-size:17px;line-height:1.55;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px;-webkit-text-size-adjust:100%}
+main{max-width:640px;margin:0 auto}
+a{color:var(--hi)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.back{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surface);color:var(--fg);text-decoration:none;font-weight:600}
+.lines{display:flex;gap:5px}
+.lines i{width:12px;height:12px;border-radius:50%}
+h1{font-family:var(--f-display);font-weight:800;font-size:36px;line-height:1.05;margin:0 0 6px;text-wrap:balance}
+.lead{color:var(--muted);margin:0 0 24px;max-width:62ch}
+h2{font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.15;margin:36px 0 10px;display:flex;align-items:baseline;gap:10px;text-wrap:balance}
+h2 .n{font-family:var(--f-mono);font-size:14px;color:var(--muted);font-weight:500}
+p,li{max-width:65ch}
+ol,ul{padding-left:1.3em;margin:8px 0}
+li{margin:6px 0}
+b{font-weight:600}
+.btn{display:inline-block;font-family:var(--f-display);font-weight:700;font-size:.92em;letter-spacing:.04em;padding:0 7px;border-radius:6px;background:var(--surface-2);border:1px solid var(--rule);white-space:nowrap}
+.btn.dep{background:#3aaa35;color:#061405;border-color:#3aaa35}
+.btn.arr{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.note{background:var(--surface);border-left:4px solid var(--warn);border-radius:0 10px 10px 0;padding:10px 14px;margin:14px 0}
+.note p{margin:0}
+.toc{background:var(--surface);border-radius:12px;padding:12px 16px;margin-bottom:8px}
+.toc ol{columns:2;column-gap:24px;margin:4px 0;font-size:15px}
+.toc li{margin:3px 0;break-inside:avoid}
+.toc a{color:var(--fg);text-decoration:none}
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+code{font-family:var(--f-mono);font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid var(--rule);padding-top:14px}
+@media (max-width:420px){ .toc ol{columns:1} h1{font-size:31px} }
+@media print{
+  :root{color-scheme:light;--bg:#fff;--surface:#f3f4f6;--surface-2:#eceef1;--rule:#d6dadf;--fg:#111;--muted:#555;--hi:#1d7a19}
+  body{font-size:12pt;padding:0}
+  .back{display:none}
+  h2{break-after:avoid}
+  .toc,.note,.tblwrap{break-inside:avoid}
+  a{color:var(--fg);text-decoration:none}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="back" href="tbane.html">← Back to app</a>
+    <span class="lines" aria-hidden="true"><i style="background:#009cdc"></i><i style="background:#ea5b0b"></i><i style="background:#a683a5"></i><i style="background:#00489a"></i><i style="background:#3aaa35"></i></span>
+  </div>
+
+  <h1>Metro timing logger<br>User guide</h1>
+  <p class="lead">Record the real running time between stations and the dwell time at each station on Oslo T-bane lines 1–5, using taps on your phone. Results can be exported as CSV or JSON and shared by email.</p>
+
+  <nav class="toc" aria-label="Contents">
+    <ol>
+      <li><a href="#open">Opening the app</a></li>
+      <li><a href="#setup">Setting up a trip</a></li>
+      <li><a href="#details">Trip details</a></li>
+      <li><a href="#log">Logging</a></li>
+      <li><a href="#finish">Finishing a trip</a></li>
+      <li><a href="#export">Exporting and sharing</a></li>
+      <li><a href="#history">History</a></li>
+      <li><a href="#tips">Tips and troubleshooting</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="open"><span class="n">1</span>Opening the app</h2>
+  <ul>
+    <li>Open <a href="https://ksamann.github.io/tbane.html">ksamann.github.io/tbane.html</a> in your phone's browser.</li>
+    <li>To open it like an app, add it to your home screen: in Safari tap <b>Share → Add to Home Screen</b>; in Chrome tap <b>⋮ → Add to Home screen</b>.</li>
+    <li>The app is a single file. It also works when opened from SharePoint or saved on the phone, and it needs no connection while you log.</li>
+    <li>Switch language with <span class="btn">NO</span> <span class="btn">EN</span> at the top. Station names always stay in Norwegian.</li>
+  </ul>
+
+  <h2 id="setup"><span class="n">2</span>Setting up a trip</h2>
+  <ol>
+    <li><b>Line:</b> tap the coloured circle for line 1–5.</li>
+    <li><b>Direction:</b> tap the terminus you are travelling towards.</li>
+    <li><b>Section:</b> the whole line is shown as a diagram. With <span class="btn">Pick start</span> selected, tap the station where you board. The app then switches to <span class="btn">Pick end</span>; tap the station where you will stop logging. Stations outside the section are greyed out.</li>
+    <li>Tap <span class="btn">Next →</span> at the bottom.</li>
+  </ol>
+  <p>Line 5 passes through the city centre twice and around the Ring line, so some stations appear twice in the list. Pick the one at the right place in the sequence.</p>
+  <div class="note"><p><b>Diversions or errors in the station list?</b> Tap <b>✎ Edit line</b> under the diagram to rename, remove or insert stations, then <span class="btn">Save line</span>. Changes are stored on your phone only. <span class="btn">Reset</span> restores the default list.</p></div>
+
+  <h2 id="details"><span class="n">3</span>Trip details</h2>
+  <ul>
+    <li><b>Observer</b> (required): your name. It is remembered for the next trip.</li>
+    <li><b>Train / unit</b> (optional): train number or unit number.</li>
+    <li><b>Note</b> (optional): anything about the trip, such as rush hour or delays.</li>
+  </ul>
+  <p>Tap <span class="btn">Start logging</span>. It stays disabled until a name is entered.</p>
+
+  <h2 id="log"><span class="n">4</span>Logging</h2>
+  <p>The large button alternates between two states. Tap it at the exact moment the train moves or stops:</p>
+  <ol>
+    <li><span class="btn dep">DEPART</span>: tap when the train starts moving from a station.</li>
+    <li><span class="btn arr">ARRIVE</span>: tap when the train has come to a stop at the next station.</li>
+    <li>Repeat for each station.</li>
+  </ol>
+  <ul>
+    <li>The large timer shows the time since your last tap: <b>dwell time</b> while standing at a station, <b>run time</b> while moving.</li>
+    <li>The list below the button shows logged stations with the newest at the top: arrival time, dwell time, and the run time between stations. The control panel stays in place when you scroll the list.</li>
+    <li><span class="btn">↶ Undo</span> removes your last tap. Use it if you tapped too early or by mistake.</li>
+    <li><span class="btn">✎ Note</span> adds a note to the current station, for example <i>door blocked</i> or <i>held at signal</i>.</li>
+    <li>A second tap within 0.4 seconds is ignored, so an accidental double tap does not register twice.</li>
+    <li>The screen is kept awake while logging, and the phone vibrates briefly on each tap where supported.</li>
+  </ul>
+  <div class="note"><p>Every tap is saved immediately. If the browser closes or the phone restarts, open the app again and logging continues where you left off.</p></div>
+
+  <h2 id="finish"><span class="n">5</span>Finishing a trip</h2>
+  <ul>
+    <li>The trip finishes automatically when you tap <span class="btn arr">ARRIVE</span> at the end station you picked.</li>
+    <li>To stop earlier, tap <span class="btn">Finish</span> at the top and confirm with <span class="btn">Finish trip</span>.</li>
+    <li>The summary shows total time, total running time, total dwell time and a table per station.</li>
+    <li>If the trip ended by mistake, tap <b>↶ Resume trip</b> on the summary to continue logging.</li>
+  </ul>
+
+  <h2 id="export"><span class="n">6</span>Exporting and sharing</h2>
+  <ul>
+    <li><span class="btn">Share (email, Teams …)</span> opens the phone's share menu with both the CSV and the JSON file attached. Pick Mail, Outlook, Teams or similar.</li>
+    <li><span class="btn">CSV</span> or <span class="btn">JSON</span> downloads the file to the phone.</li>
+    <li>If sharing isn't supported in the browser, both files are downloaded instead.</li>
+  </ul>
+  <p>The CSV has one row per station:</p>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Column</th><th>Content</th></tr></thead>
+    <tbody>
+      <tr><td><code>trip_id</code>, <code>date</code>, <code>line</code>, <code>direction</code></td><td>Identifies the trip. Direction is the terminus.</td></tr>
+      <tr><td><code>seq</code>, <code>station</code></td><td>Order and station name.</td></tr>
+      <tr><td><code>arrival</code>, <code>departure</code></td><td>Timestamps with milliseconds and time zone, e.g. <code>2026-11-23T17:27:31.123+01:00</code>.</td></tr>
+      <tr><td><code>dwell_s</code></td><td>Seconds at the station (departure − arrival).</td></tr>
+      <tr><td><code>to_station</code>, <code>run_s</code></td><td>Next station and seconds from departure here to arrival there.</td></tr>
+      <tr><td><code>station_note</code>, <code>observer</code>, <code>train</code>, <code>trip_note</code></td><td>Your notes and trip details.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note"><p><b>CSV format follows the app language.</b> In English: comma separator and decimal point. In Norwegian: semicolon separator, decimal comma and Norwegian column names, which opens correctly in Norwegian Excel. Switch language before exporting if the recipient needs the other format. The JSON file always uses English keys and also contains every individual tap.</p></div>
+
+  <h2 id="history"><span class="n">7</span>History</h2>
+  <ul>
+    <li>Tap <span class="btn">History</span> on the setup screen to see all trips stored on the phone.</li>
+    <li>Tap a trip to see its summary and export it again.</li>
+    <li><span class="btn">Share</span> sends one trip; <span class="btn">Delete</span> removes it after you confirm.</li>
+    <li><span class="btn">Export all (CSV)</span> or <span class="btn">Export all (JSON)</span> exports every trip in one file.</li>
+  </ul>
+
+  <h2 id="tips"><span class="n">8</span>Tips and troubleshooting</h2>
+  <ul>
+    <li><b>Data lives only on this phone.</b> Export or share trips before clearing browser data or switching phones. Private/incognito tabs don't keep data.</li>
+    <li><b>Tap on the movement, not the doors.</b> Use the same rule on every trip, such as first wheel movement and full stop, so the numbers are comparable.</li>
+    <li><b>Screen turned off anyway?</b> Some phones ignore the keep-awake request in power-saving mode. Turn power saving off or increase the auto-lock time.</li>
+    <li><b>Missed a tap?</b> Tap as soon as you can and add a <span class="btn">✎ Note</span> so the value can be corrected later.</li>
+    <li><b>Wrong station or direction?</b> Finish the trip, delete it in History, and start again.</li>
+  </ul>
+
+  <footer>Station lists are based on the current T-bane service pattern (lines 1–5) and can be edited in the app. Temporary diversions are not included.</footer>
+</main>
+</body>
+</html>
