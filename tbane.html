@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1013">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>T-bane tidslogger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one phone-width column. Logging = sticky control panel (status, timer, big toggle) over a newest-first timeline. Dark-only by design. */
+:root{
+  color-scheme: dark;
+  --bg:#0d1013;
+  --surface:#161a1f;
+  --surface-2:#1f242b;
+  --rule:#2a3139;
+  --fg:#eef1f4;
+  --muted:#8b95a0;
+  --dim:#4d5661;
+  --warn:#f0b43c;
+  --line:#3aaa35;
+  --ink:#0d1013;
+  --hi:#3aaa35;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.4;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 24px;-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.label{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.hint{font-size:13px;color:var(--muted);margin:0}
+
+.app{max-width:440px;margin:0 auto}
+.screen{display:flex;flex-direction:column;gap:18px}
+
+.bar{display:flex;align-items:center;gap:10px;min-height:44px}
+.bar h1{font-family:var(--f-display);font-weight:700;font-size:22px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.iconbtn{min-width:44px;height:44px;border-radius:12px;background:var(--surface);display:grid;place-items:center;font-size:15px;font-weight:600;padding:0 14px}
+.badge{width:40px;height:40px;border-radius:50%;background:var(--line);color:var(--ink);display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:22px;flex:none}
+.lang{display:flex;background:var(--surface);border-radius:10px;padding:3px;gap:2px}
+.lang button{min-width:38px;height:38px;border-radius:8px;font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
+.lang button[aria-pressed="true"]{background:var(--surface-2);color:var(--fg)}
+
+/* ---------- setup ---------- */
+.field{display:flex;flex-direction:column;gap:8px}
+.lines{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.lines button{aspect-ratio:1;max-width:100%;border-radius:50%;font-family:var(--f-display);font-weight:800;font-size:28px;background:var(--surface);border:3px solid var(--c)}
+.lines button[aria-pressed="true"]{background:var(--c);color:var(--k)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.seg button{min-height:56px;border-radius:12px;background:var(--surface);padding:8px 12px;text-align:left;font-family:var(--f-display);font-weight:600;font-size:19px;border:2px solid transparent;line-height:1.15}
+.seg button small{display:block;font-family:var(--f-body);font-size:12px;font-weight:500;color:var(--muted)}
+.seg button[aria-pressed="true"]{border-color:var(--hi);background:var(--surface-2)}
+input,textarea{width:100%;min-height:52px;border-radius:12px;background:var(--surface);border:1px solid var(--rule);color:var(--fg);font:inherit;font-size:17px;padding:12px 14px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid2 .field{min-width:0}
+
+.trip{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);border-radius:12px;padding:12px 14px}
+.trip b{font-family:var(--f-display);font-weight:700;font-size:20px;line-height:1.15;min-width:0}
+.trip .hint{white-space:nowrap}
+.pick{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface);padding:4px;border-radius:12px}
+.pick button{min-height:42px;border-radius:9px;font-weight:600;color:var(--muted)}
+.pick button[aria-pressed="true"]{background:var(--surface-2);color:var(--fg);box-shadow:inset 0 -3px 0 var(--hi)}
+
+.route{list-style:none;margin:0;padding:0}
+.route li{position:relative}
+.route li::before{content:"";position:absolute;left:12px;top:0;bottom:0;width:4px;background:var(--hi)}
+.route li:first-child::before{top:50%}
+.route li:last-child::before{bottom:50%}
+.route li.out::before{background:var(--dim)}
+.route li.edge-top::before{background:linear-gradient(var(--dim) 50%,var(--hi) 50%)}
+.route li.edge-bot::before{background:linear-gradient(var(--hi) 50%,var(--dim) 50%)}
+.route .st{display:grid;grid-template-columns:28px 1fr auto;align-items:center;gap:12px;width:100%;min-height:42px;text-align:left;padding:0 6px 0 0}
+.route .st i{width:14px;height:14px;border-radius:50%;background:var(--bg);border:3px solid var(--hi);justify-self:center;position:relative;z-index:1}
+.route .st span{font-family:var(--f-display);font-weight:600;font-size:18px}
+.route li.out .st i{border-color:var(--dim)}
+.route li.out .st span{color:var(--dim)}
+.route li.sel .st i{width:22px;height:22px;background:var(--hi);border-color:var(--fg)}
+.route li.sel .st span{font-weight:800}
+.tag{font-style:normal;font-size:11px;font-weight:700;letter-spacing:.1em;padding:3px 8px;border-radius:6px;background:var(--fg);color:var(--bg)}
+.tag.soft{background:var(--surface-2);color:var(--muted)}
+
+.edit{display:flex;flex-direction:column;gap:6px}
+.edit .er{display:grid;grid-template-columns:1fr 44px;gap:6px}
+.edit .er input{min-height:44px;font-family:var(--f-display);font-weight:600;font-size:18px;padding:8px 12px}
+.edit .er button{border-radius:10px;background:var(--surface);color:var(--muted);font-size:18px}
+.edit .ins{align-self:flex-start;font-size:13px;font-weight:600;color:var(--hi);padding:2px 8px;min-height:28px}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap}
+.btn{min-height:46px;padding:0 16px;border-radius:12px;background:var(--surface);font-weight:600}
+.btn.primary{background:var(--fg);color:var(--bg)}
+.linkbtn{font-weight:600;color:var(--hi);padding:6px 0;font-size:15px}
+
+.dock{position:sticky;bottom:0;z-index:3;margin-top:4px;padding-block:12px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(transparent,var(--bg) 22%)}
+.cta{width:100%;min-height:72px;border-radius:16px;background:var(--line);color:var(--ink);font-family:var(--f-display);font-weight:800;font-size:25px;letter-spacing:.06em;text-transform:uppercase}
+
+/* ---------- logging ---------- */
+.panel{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;flex-direction:column;gap:10px;padding-block:6px 12px;border-bottom:1px solid var(--rule)}
+.now{display:grid;grid-template-columns:1fr auto;align-items:end;gap:4px 12px}
+.now .where{grid-column:1/-1;display:flex;align-items:baseline;gap:8px;min-width:0}
+.now .where b{font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.timer{font-family:var(--f-mono);font-weight:700;font-size:58px;line-height:.95;letter-spacing:-.04em}
+.timer .ds{font-size:.55em;color:var(--muted);letter-spacing:0}
+.now .what{font-size:13px;color:var(--muted);text-align:right;line-height:1.25;padding-bottom:4px}
+.big{min-height:136px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:var(--f-display);transition:transform .06s;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.big:active{transform:scale(.985)}
+.big .verb{font-weight:800;font-size:44px;letter-spacing:.07em;line-height:1;text-transform:uppercase}
+.big .sub{font-weight:600;font-size:19px;opacity:.85;max-width:100%;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.big.dep{background:var(--line);color:var(--ink)}
+.big.arr{background:var(--fg);color:var(--bg);box-shadow:inset 0 0 0 6px var(--hi)}
+.tools{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.tool{min-height:46px;padding:0 16px;border-radius:12px;background:var(--surface);font-weight:600}
+.tool[disabled]{opacity:.35;cursor:default}
+.progress{font-size:13px;color:var(--muted);text-align:center}
+.progress b{color:var(--fg);font-weight:600}
+.confirm,.notebox{background:var(--surface);border:1px solid var(--rule);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.notebox textarea{min-height:64px;background:var(--bg)}
+.confirm .btnrow .btn,.notebox .btnrow .btn{flex:1}
+
+.log{padding-top:12px}
+.log-head{display:grid;grid-template-columns:28px 1fr 74px 64px;gap:8px;padding-bottom:6px}
+.log-head span:nth-child(n+3){text-align:right}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{display:grid;grid-template-columns:28px 1fr 74px 64px;gap:8px;align-items:center;position:relative}
+.tl li::before{content:"";position:absolute;left:12px;top:0;bottom:0;width:4px;background:var(--hi);opacity:.55}
+.tl li:last-child::before{bottom:50%}
+.tl .stn{min-height:44px;border-top:1px solid var(--rule)}
+.tl .stn:first-child{border-top:0}
+.tl .stn i{width:14px;height:14px;border-radius:50%;background:var(--bg);border:3px solid var(--hi);justify-self:center;position:relative;z-index:1}
+.tl .name{font-family:var(--f-display);font-weight:600;font-size:18px;line-height:1.15;padding-block:8px;min-width:0}
+.tl .name small{display:block;font-family:var(--f-body);font-weight:500;font-size:12px;color:var(--warn);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl .clk{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right}
+.tl .v{font-family:var(--f-mono);font-size:15px;font-weight:700;text-align:right}
+.tl .run{min-height:34px}
+.tl .run .k{grid-column:2/5;display:flex;align-items:baseline;gap:8px;font-size:12px;color:var(--muted)}
+.tl .run .k b{font-family:var(--f-mono);font-size:14px;font-weight:500;color:var(--fg);background:var(--surface);padding:2px 8px;border-radius:6px}
+.tl .live .v{color:var(--hi)}
+.tl .run.live .k b{color:var(--hi);background:var(--surface-2)}
+.tl .stn.live i{background:var(--hi);border-color:var(--fg);width:18px;height:18px}
+.tl .run.live .k{color:var(--fg)}
+.empty{padding:16px 0}
+
+/* ---------- summary & history ---------- */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--surface);border-radius:12px;padding:12px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat b{font-family:var(--f-mono);font-size:19px}
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:9px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--rule)}
+th{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+th.n,td.n{text-align:right}
+td.n{font-family:var(--f-mono)}
+tr:last-child td{border-bottom:0}
+.exports{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.exports .share{grid-column:1/-1;min-height:62px;background:var(--line);color:var(--ink);font-family:var(--f-display);font-weight:800;font-size:22px;letter-spacing:.04em;border-radius:14px}
+.exports button:not(.share){min-height:52px;border-radius:12px;background:var(--surface);font-weight:600}
+.hist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.hist li{background:var(--surface);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.hist .row{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.hist .open{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;text-align:left;min-width:0;padding:0}
+.hist .t{font-family:var(--f-display);font-weight:600;font-size:18px;line-height:1.15}
+.hist .s{font-size:13px;color:var(--muted)}
+.hist .badge{width:34px;height:34px;font-size:18px}
+.hist .acts{display:flex;gap:6px}
+.hist .acts button{height:40px;padding:0 12px;border-radius:10px;background:var(--surface-2);font-size:14px;font-weight:600}
+.hist .confirm{background:var(--bg)}
+
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:12px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:calc(100% - 32px);z-index:20;box-shadow:0 8px 30px rgba(0,0,0,.45)}
+@media (prefers-reduced-motion:reduce){.big{transition:none}}
+</style>
+</head>
+<body>
+<main class="app" id="app"></main>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   LINJEDATA / LINE DATA
+   Stasjonsrekkefølge fra den ene endestasjonen til den andre.
+   Kilde: no.wikipedia.org, malene «T-banen i Oslo linje 1–5» (nov. 2026).
+   Kan også redigeres i appen (lagres lokalt på telefonen).
+   ===================================================================== */
+const DEFAULT_LINES = {
+  "1": {color:"#009cdc", ink:"#06131a", hi:"#22b0ec", note:{no:"Går til Bergkrystallen i rushtiden, ellers til Helsfyr", en:"Runs to Bergkrystallen at rush hour, otherwise to Helsfyr"},
+    stations:["Frognerseteren","Voksenkollen","Lillevann","Skogen","Voksenlia","Holmenkollen","Besserud","Midtstuen","Skådalen","Vettakollen","Gulleråsen","Gråkammen","Slemdal","Ris","Gaustad","Vinderen","Steinerud","Frøen","Majorstuen","Nationaltheatret","Stortinget","Jernbanetorget","Grønland","Tøyen","Ensjø","Helsfyr","Brynseng","Høyenhall","Manglerud","Ryen","Brattlikollen","Karlsrud","Lambertseter","Munkelia","Bergkrystallen"]},
+  "2": {color:"#ea5b0b", ink:"#1a0a02", hi:"#f0732c",
+    stations:["Østerås","Lijordet","Eiksmarka","Ekraveien","Røa","Hovseter","Holmen","Makrellbekken","Smestad","Borgen","Majorstuen","Nationaltheatret","Stortinget","Jernbanetorget","Grønland","Tøyen","Ensjø","Helsfyr","Brynseng","Hellerud","Tveita","Haugerud","Trosterud","Lindeberg","Furuset","Ellingsrudåsen"]},
+  "3": {color:"#a683a5", ink:"#170f17", hi:"#b996b8",
+    stations:["Kolsås","Hauger","Gjettum","Avløs","Haslum","Gjønnes","Bekkestua","Ringstabekk","Jar","Bjørnsletta","Åsjordet","Ullernåsen","Montebello","Smestad","Borgen","Majorstuen","Nationaltheatret","Stortinget","Jernbanetorget","Grønland","Tøyen","Ensjø","Helsfyr","Brynseng","Hellerud","Godlia","Skøyenåsen","Oppsal","Ulsrud","Bøler","Bogerud","Skullerud","Mortensrud"]},
+  "4": {color:"#00489a", ink:"#ffffff", hi:"#4f86d9",
+    stations:["Vestli","Stovner","Rommen","Romsås","Grorud","Ammerud","Kalbakken","Rødtvet","Veitvet","Linderud","Vollebekk","Risløkka","Økern","Løren","Sinsen","Storo","Nydalen","Ullevål stadion","Forskningsparken","Blindern","Majorstuen","Nationaltheatret","Stortinget","Jernbanetorget","Grønland","Tøyen","Ensjø","Helsfyr","Brynseng","Høyenhall","Manglerud","Ryen","Brattlikollen","Karlsrud","Lambertseter","Munkelia","Bergkrystallen"]},
+  "5": {color:"#3aaa35", ink:"#061405", hi:"#4cc046", note:{no:"Går via sentrum, rundt Ringen og gjennom sentrum igjen", en:"Runs via the city centre, round the Ring line and through the centre again"},
+    stations:["Sognsvann","Kringsjå","Holstein","Østhorn","Tåsen","Berg","Ullevål stadion","Forskningsparken","Blindern","Majorstuen","Nationaltheatret","Stortinget","Jernbanetorget","Grønland","Tøyen","Carl Berners plass","Sinsen","Storo","Nydalen","Ullevål stadion","Forskningsparken","Blindern","Majorstuen","Nationaltheatret","Stortinget","Jernbanetorget","Grønland","Tøyen","Carl Berners plass","Hasle","Økern","Risløkka","Vollebekk","Linderud","Veitvet","Rødtvet","Kalbakken","Ammerud","Grorud","Romsås","Rommen","Stovner","Vestli"]}
+};
+
+/* =====================================================================
+   TEKSTER / UI STRINGS
+   ===================================================================== */
+const I18N = {
+  no:{
+    appTitle:"T-bane tidslogger", history:"Historikk", line:"Linje", direction:"Retning", towards:"Mot",
+    section:"Strekning", segs:n=>`${n} ${n===1?"strekning":"strekninger"}`,
+    pickStart:"Velg start", pickEnd:"Velg slutt", tagStart:"START", tagEnd:"SLUTT", tagTerm:"ENDESTASJON",
+    editLine:n=>`✎ Rediger linje ${n}`, editHint:"Rett navn, fjern eller sett inn stasjoner. Endringene lagres på denne telefonen.",
+    stationN:n=>`Stasjon ${n}`, remove:s=>`Fjern ${s}`, insertHere:"+ Sett inn stasjon her",
+    saveLine:"Lagre linje", cancel:"Avbryt", reset:"Tilbakestill",
+    resetDone:"Standardlisten er hentet. Trykk Lagre linje for å bruke den.", minTwo:"En linje må ha minst to stasjoner", lineSaved:n=>`Linje ${n} er lagret`,
+    customLine:"Linjen er redigert på denne telefonen.",
+    startNotTerminus:"Startstasjonen kan ikke være siste stasjon", endAfterStart:"Slutt må komme etter start i kjøreretningen",
+    observer:"Registrator", train:"Tog / vognsett", note:"Notat", startLogging:"Start logging",
+    end:"Avslutt", endQ:"Avslutte turen nå?", endHint:"Det du har logget, blir lagret. Du går videre til eksport.",
+    keepLogging:"Fortsett logging", endTrip:"Avslutt tur",
+    atStation:"Står på", readyAt:"Klar på", next:"Mot", dwell:"oppholdstid", run:"kjøretid", waiting:"venter på<br>første avgang",
+    depart:"Avgang", arrive:"Ankomst", from:"fra", to:"til",
+    undo:"↶ Angre", noteBtn:"✎ Notat", progress:(a,b)=>`Stasjon <b>${a}</b> av ${b}`,
+    noteFor:s=>`Notat for ${s}`, saveNote:"Lagre notat", noteSaved:"Notatet er lagret", undone:"Siste trykk er fjernet",
+    emptyLog:"Ingen trykk ennå. Tidene dukker opp her etter hvert, med siste stasjon øverst.",
+    colStation:"Stasjon", colArr:"Ank.", colDwell:"Opphold", colRun:"Kjøretid", colTo:"Til",
+    runTo:s=>`kjører mot ${s}`, start:"start",
+    arrivedEnd:s=>`Ankommet ${s}. Turen er avsluttet.`,
+    tripDone:"Tur ferdig", total:"Total", running:"Kjøring", dwelling:"Opphold", trainShort:"tog",
+    share:"Del (e-post, Teams …)", newTrip:"Ny tur", resume:"↶ Gjenoppta turen",
+    shareFallback:"Deling støttes ikke her. Filene er lastet ned i stedet.", downloaded:f=>`Lastet ned ${f}`,
+    noTrips:"Ingen turer ennå. Turene du logger, havner her.",
+    del:"Slett", delQ:"Slette denne turen for godt?", delDone:"Turen er slettet",
+    exportAllCsv:"Eksporter alle (CSV)", exportAllJson:"Eksporter alle (JSON)",
+    histHint:"Turene lagres bare på denne telefonen. Eksporter dem før du sletter nettleserdata.",
+    back:"Tilbake", resumed:"Turen er gjenopptatt", storageOff:"Lagring er ikke tilgjengelig i denne nettleseren. Eksporter turen før du lukker siden.",
+    csv:{trip_id:"tur_id",date:"dato",line:"linje",direction:"retning",seq:"sekvens",station:"stasjon",arrival:"ankomst",departure:"avgang",dwell_s:"opphold_s",to_station:"til_stasjon",run_s:"kjoretid_s",station_note:"stasjonsnotat",observer:"registrator",train:"tog",trip_note:"turnotat"},
+    locale:"nb-NO", sep:";", dec:","
+  },
+  en:{
+    appTitle:"Metro timing logger", history:"History", line:"Line", direction:"Direction", towards:"Towards",
+    section:"Section", segs:n=>`${n} ${n===1?"leg":"legs"}`,
+    pickStart:"Pick start", pickEnd:"Pick end", tagStart:"START", tagEnd:"END", tagTerm:"TERMINUS",
+    editLine:n=>`✎ Edit line ${n}`, editHint:"Rename, remove or insert stations. Changes are saved on this phone.",
+    stationN:n=>`Station ${n}`, remove:s=>`Remove ${s}`, insertHere:"+ Insert station here",
+    saveLine:"Save line", cancel:"Cancel", reset:"Reset",
+    resetDone:"Default list loaded. Tap Save line to use it.", minTwo:"A line needs at least two stations", lineSaved:n=>`Line ${n} saved`,
+    customLine:"This line has been edited on this phone.",
+    startNotTerminus:"The start can't be the last station", endAfterStart:"The end must come after the start in the direction of travel",
+    observer:"Observer", train:"Train / unit", note:"Note", startLogging:"Start logging",
+    end:"Finish", endQ:"Finish this trip now?", endHint:"Everything you've logged is saved. You'll go on to export.",
+    keepLogging:"Keep logging", endTrip:"Finish trip",
+    atStation:"At", readyAt:"Ready at", next:"Next", dwell:"dwell time", run:"run time", waiting:"waiting for<br>first departure",
+    depart:"Depart", arrive:"Arrive", from:"from", to:"at",
+    undo:"↶ Undo", noteBtn:"✎ Note", progress:(a,b)=>`Station <b>${a}</b> of ${b}`,
+    noteFor:s=>`Note for ${s}`, saveNote:"Save note", noteSaved:"Note saved", undone:"Last tap removed",
+    emptyLog:"No taps yet. Times appear here as you log, with the latest station on top.",
+    colStation:"Station", colArr:"Arr.", colDwell:"Dwell", colRun:"Run time", colTo:"To",
+    runTo:s=>`running to ${s}`, start:"start",
+    arrivedEnd:s=>`Arrived at ${s}. Trip finished.`,
+    tripDone:"Trip finished", total:"Total", running:"Running", dwelling:"Dwell", trainShort:"train",
+    share:"Share (email, Teams …)", newTrip:"New trip", resume:"↶ Resume trip",
+    shareFallback:"Sharing isn't supported here. The files were downloaded instead.", downloaded:f=>`Downloaded ${f}`,
+    noTrips:"No trips yet. Trips you log will appear here.",
+    del:"Delete", delQ:"Delete this trip permanently?", delDone:"Trip deleted",
+    exportAllCsv:"Export all (CSV)", exportAllJson:"Export all (JSON)",
+    histHint:"Trips are stored only on this phone. Export them before clearing browser data.",
+    back:"Back", resumed:"Trip resumed", storageOff:"Storage isn't available in this browser. Export the trip before closing the page.",
+    csv:{trip_id:"trip_id",date:"date",line:"line",direction:"direction",seq:"seq",station:"station",arrival:"arrival",departure:"departure",dwell_s:"dwell_s",to_station:"to_station",run_s:"run_s",station_note:"station_note",observer:"observer",train:"train",trip_note:"trip_note"},
+    locale:"en-GB", sep:",", dec:"."
+  }
+};
+
+/* =====================================================================
+   LAGRING / STORAGE
+   ===================================================================== */
+const K = {lang:"tbane.lang", active:"tbane.active", trips:"tbane.trips", lines:"tbane.lines", observer:"tbane.observer"};
+let storageOk = true;
+function load(key, def){ try{ const v=localStorage.getItem(key); return v==null?def:JSON.parse(v); }catch(e){ storageOk=false; return def; } }
+function save(key, val){ try{ if(val==null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val)); }catch(e){ storageOk=false; } }
+
+const browserLang = (navigator.language||"").toLowerCase();
+let lang = load(K.lang, /^(nb|nn|no)\b/.test(browserLang) ? "no" : "en");
+if(!I18N[lang]) lang="no";
+const T = () => I18N[lang];
+
+let customLines = load(K.lines, {});
+const lineStations = n => (customLines[n] && customLines[n].length>1) ? customLines[n] : DEFAULT_LINES[n].stations;
+
+const S = {
+  screen:"setup", line:"5", dir:0, startIdx:0, endIdx:9999, pickMode:"start", editing:null,
+  observer: load(K.observer, ""), train:"", note:"",
+  active: load(K.active, null), trips: load(K.trips, []),
+  viewId:null, justFinished:null, noteOpen:false, confirmEnd:false, confirmDel:null
+};
+if(!Array.isArray(S.trips)) S.trips=[];
+if(S.active) { S.screen="log"; S.line=S.active.line; }
+
+/* =====================================================================
+   HJELPERE / HELPERS
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const app = $("#app");
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad = (n,w=2) => String(n).padStart(w,"0");
+function fmt(ms, tenths=true){
+  ms=Math.max(0,ms); const tot=ms/1000, m=Math.floor(tot/60), s=tot-m*60, w=Math.floor(s), d=Math.floor((s-w)*10);
+  return `${m}:${pad(w)}` + (tenths?`.${d}`:"");
+}
+function fmtLong(ms){ ms=Math.max(0,ms); const h=Math.floor(ms/3600000); return h ? `${h}:${pad(Math.floor(ms/60000)%60)}:${pad(Math.floor(ms/1000)%60)}` : fmt(ms,false); }
+const clock = t => new Date(t).toLocaleTimeString(T().locale,{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+const dateStr = t => new Date(t).toLocaleDateString(T().locale,{day:"2-digit",month:"2-digit",year:"numeric"});
+function isoLocal(t){
+  const d=new Date(t), o=-d.getTimezoneOffset(), sg=o>=0?"+":"-", ao=Math.abs(o);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}.${pad(d.getMilliseconds(),3)}${sg}${pad(Math.floor(ao/60))}:${pad(ao%60)}`;
+}
+function setAccent(n){ const L=DEFAULT_LINES[n], r=document.documentElement.style; r.setProperty("--line",L.color); r.setProperty("--ink",L.ink); r.setProperty("--hi",L.hi); }
+let tt; function toast(m){ const t=$("#toast"); t.textContent=m; t.hidden=false; clearTimeout(tt); tt=setTimeout(()=>t.hidden=true,2800); }
+function buzz(){ try{ navigator.vibrate && navigator.vibrate(30); }catch(e){} }
+
+/* ---------- trip model ---------- */
+function setupRoute(){ const st=lineStations(S.line); return S.dir===0 ? st.slice() : st.slice().reverse(); }
+function tripState(trip){
+  const last=trip.events[trip.events.length-1];
+  if(!last) return {mode:"dep", idx:trip.startIdx, since:null};
+  if(last.type==="arr") return {mode:"dep", idx:last.idx, since:last.t};
+  return {mode:"arr", idx:last.idx+1, from:last.idx, since:last.t};
+}
+function stops(trip){
+  const out=[]; let cur=null;
+  for(const e of trip.events){
+    if(e.type==="dep"){ if(cur && cur.idx===e.idx && cur.dep==null) cur.dep=e.t; else { cur={idx:e.idx,arr:null,dep:e.t}; out.push(cur);} }
+    else { cur={idx:e.idx,arr:e.t,dep:null}; out.push(cur); }
+  }
+  return out;
+}
+function segments(trip){
+  const list=stops(trip), r=trip.stations;
+  return list.map((s,i)=>{ const n=list[i+1]; return {
+    seq:i+1, idx:s.idx, station:r[s.idx], arr:s.arr, dep:s.dep,
+    dwell:(s.arr!=null&&s.dep!=null)?s.dep-s.arr:null,
+    run:(s.dep!=null&&n&&n.arr!=null)?n.arr-s.dep:null,
+    to:n?r[n.idx]:"", note:trip.notes[s.idx]||""
+  };});
+}
+function totals(trip){
+  const sg=segments(trip), ev=trip.events;
+  return { total: ev.length>1 ? ev[ev.length-1].t-ev[0].t : 0,
+    run: sg.reduce((a,x)=>a+(x.run||0),0), dwell: sg.reduce((a,x)=>a+(x.dwell||0),0), legs: sg.filter(x=>x.run!=null).length,
+    endName: sg.length ? sg[sg.length-1].station : trip.stations[trip.startIdx] };
+}
+const persistActive = () => save(K.active, S.active);
+const persistTrips = () => save(K.trips, S.trips);
+
+/* ---------- export ---------- */
+function slug(s){ return String(s).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,""); }
+function baseName(trip){
+  const tt=totals(trip), d=new Date(trip.startedAt);
+  return `tbane_L${trip.line}_${slug(trip.stations[trip.startIdx])}-${slug(tt.endName)}_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+function csvCell(v){ const s=String(v==null?"":v); return (s.includes(T().sep) || /["\n\r]/.test(s)) ? `"${s.replace(/"/g,'""')}"` : s; }
+function secs(ms){ return ms==null ? "" : (ms/1000).toFixed(1).replace(".", T().dec); }
+function csvRows(trip){
+  return segments(trip).map(x=>[trip.id, isoLocal(trip.startedAt).slice(0,10), trip.line, trip.towards, x.seq, x.station,
+    x.arr!=null?isoLocal(x.arr):"", x.dep!=null?isoLocal(x.dep):"", secs(x.dwell), x.to, secs(x.run), x.note, trip.observer, trip.train, trip.note]);
+}
+function toCSV(trips){
+  const h=T().csv, sep=T().sep;
+  const head=["trip_id","date","line","direction","seq","station","arrival","departure","dwell_s","to_station","run_s","station_note","observer","train","trip_note"].map(k=>h[k]);
+  const lines=[head, ...trips.flatMap(csvRows)].map(r=>r.map(csvCell).join(sep));
+  return "﻿" + lines.join("\r\n") + "\r\n";
+}
+function tripJSON(trip){
+  const tt=totals(trip);
+  return {
+    id:trip.id, line:trip.line, direction:trip.towards, start_station:trip.stations[trip.startIdx], planned_end_station:trip.stations[trip.endIdx],
+    observer:trip.observer, train:trip.train, note:trip.note,
+    started_at:isoLocal(trip.startedAt), ended_at:trip.endedAt?isoLocal(trip.endedAt):null, ended_by:trip.endedBy||null,
+    totals:{total_s:+(tt.total/1000).toFixed(3), run_s:+(tt.run/1000).toFixed(3), dwell_s:+(tt.dwell/1000).toFixed(3), legs:tt.legs},
+    segments:segments(trip).map(x=>({seq:x.seq, station:x.station, station_index:x.idx,
+      arrival:x.arr!=null?isoLocal(x.arr):null, departure:x.dep!=null?isoLocal(x.dep):null,
+      dwell_s:x.dwell!=null?+(x.dwell/1000).toFixed(3):null, to_station:x.to||null, run_s:x.run!=null?+(x.run/1000).toFixed(3):null, note:x.note||null})),
+    events:trip.events.map(e=>({type:e.type==="dep"?"departure":"arrival", station:e.station, station_index:e.idx, timestamp:e.ts, epoch_ms:e.t})),
+    route:trip.stations
+  };
+}
+const toJSON = trips => JSON.stringify(trips.length===1 ? {app:"tbane-tidslogger", version:1, trip:tripJSON(trips[0])} : {app:"tbane-tidslogger", version:1, trips:trips.map(tripJSON)}, null, 2);
+function makeFiles(trips, name){
+  return {
+    csv: new File([toCSV(trips)], name+".csv", {type:"text/csv"}),
+    json: new File([toJSON(trips)], name+".json", {type:"application/json"})
+  };
+}
+function download(file){
+  const url=URL.createObjectURL(file), a=document.createElement("a");
+  a.href=url; a.download=file.name; a.rel="noopener"; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+}
+async function share(trips, name){
+  const f=makeFiles(trips, name), files=[f.csv, f.json];
+  try{
+    if(navigator.canShare && navigator.canShare({files})){
+      await navigator.share({files, title:name, text:name});
+      return;
+    }
+  }catch(e){ if(e && e.name==="AbortError") return; }
+  download(f.csv); setTimeout(()=>download(f.json), 400); toast(T().shareFallback);
+}
+function exportOne(trips, name, kind){ const f=makeFiles(trips,name)[kind]; download(f); toast(T().downloaded(f.name)); }
+
+/* ---------- wake lock ---------- */
+let wakeLock=null;
+async function wantWake(on){
+  try{
+    if(on && !wakeLock && "wakeLock" in navigator && document.visibilityState==="visible"){
+      wakeLock = await navigator.wakeLock.request("screen");
+      wakeLock.addEventListener("release", ()=>{ wakeLock=null; });
+    } else if(!on && wakeLock){ await wakeLock.release(); wakeLock=null; }
+  }catch(e){ wakeLock=null; }
+}
+document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible" && S.screen==="log") wantWake(true); });
+
+/* =====================================================================
+   RENDER
+   ===================================================================== */
+let tick=null;
+function go(screen){ S.screen=screen; S.confirmEnd=false; S.noteOpen=false; S.confirmDel=null; if(screen!=="setup") S.editing=null; draw(); window.scrollTo(0,0); }
+function draw(){
+  document.documentElement.lang = lang==="no"?"no":"en";
+  document.title = T().appTitle;
+  clearInterval(tick);
+  const ln = S.screen==="log"&&S.active ? S.active.line : S.screen==="done"&&viewTrip() ? viewTrip().line : S.line;
+  setAccent(ln);
+  wantWake(S.screen==="log");
+  ({setup:drawSetup, log:drawLog, done:drawDone, hist:drawHist})[S.screen]();
+}
+const langToggle = () => `<div class="lang" role="group" aria-label="Språk / Language"><button data-lang="no" aria-pressed="${lang==="no"}">NO</button><button data-lang="en" aria-pressed="${lang==="en"}">EN</button></div>`;
+function bindCommon(){
+  app.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{ lang=b.dataset.lang; save(K.lang,lang); draw(); });
+  app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>go(b.dataset.go));
+}
+
+/* ---------- setup ---------- */
+function drawSetup(){
+  const t=T(), r=setupRoute(), base=lineStations(S.line), L=DEFAULT_LINES[S.line], ends=[base[base.length-1], base[0]];
+  S.endIdx=Math.min(S.endIdx, r.length-1); if(S.startIdx>=S.endIdx) S.startIdx=Math.max(0,S.endIdx-1);
+  const n=S.endIdx-S.startIdx;
+  app.innerHTML = `<section class="screen">
+    <div class="bar"><h1>${t.appTitle}</h1>${langToggle()}<button class="iconbtn" data-go="hist">${t.history}</button></div>
+    <div class="field"><span class="label">${t.line}</span>
+      <div class="lines">${Object.entries(DEFAULT_LINES).map(([k,v])=>`<button style="--c:${v.color};--k:${v.ink}" aria-pressed="${k===S.line}" data-line="${k}">${k}</button>`).join("")}</div></div>
+    <div class="field"><span class="label">${t.direction}</span>
+      <div class="seg">${ends.map((e,i)=>`<button aria-pressed="${S.dir===i}" data-dir="${i}"><small>${t.towards}</small>${esc(e)}</button>`).join("")}</div>
+      ${L.note?`<p class="hint">${esc(L.note[lang])}.</p>`:""}
+      ${customLines[S.line]?`<p class="hint">${t.customLine}</p>`:""}</div>
+    <div class="field">
+      <span class="label">${t.section}</span>
+      <div class="trip"><b>${esc(r[S.startIdx])} → ${esc(r[S.endIdx])}</b><span class="hint num">${t.segs(n)}</span></div>
+      ${S.editing ? editorHTML() : `
+      <div class="pick" role="group">
+        <button aria-pressed="${S.pickMode==="start"}" data-pick="start">${t.pickStart}</button>
+        <button aria-pressed="${S.pickMode==="end"}" data-pick="end">${t.pickEnd}</button>
+      </div>
+      <ol class="route">${r.map((s,i)=>{
+        const out=i<S.startIdx||i>S.endIdx, sel=i===S.startIdx||i===S.endIdx;
+        const cls=[out?"out":"", sel?"sel":"", i===S.startIdx&&i>0?"edge-top":"", i===S.endIdx&&i<r.length-1?"edge-bot":""].join(" ");
+        const tag=i===S.startIdx?`<em class="tag">${t.tagStart}</em>`:i===S.endIdx?`<em class="tag">${t.tagEnd}</em>`:(i===0||i===r.length-1)?`<em class="tag soft">${t.tagTerm}</em>`:"";
+        return `<li class="${cls}"><button class="st" data-st="${i}"><i></i><span>${esc(s)}</span>${tag}</button></li>`;}).join("")}</ol>
+      <div class="btnrow"><button class="linkbtn" id="edit">${t.editLine(S.line)}</button></div>`}
+    </div>
+    <div class="field"><label class="label" for="obs">${t.observer}</label><input id="obs" value="${esc(S.observer)}" autocomplete="name"></div>
+    <div class="grid2">
+      <div class="field"><label class="label" for="train">${t.train}</label><input id="train" value="${esc(S.train)}" inputmode="numeric" autocomplete="off"></div>
+      <div class="field"><label class="label" for="tnote">${t.note}</label><input id="tnote" value="${esc(S.note)}" autocomplete="off"></div>
+    </div>
+    ${storageOk?"":`<p class="hint" style="color:var(--warn)">${t.storageOff}</p>`}
+    <div class="dock"><button class="cta" id="go" ${S.editing?"disabled style=\"opacity:.4\"":""}>${t.startLogging}</button></div>
+  </section>`;
+  bindCommon();
+  app.querySelectorAll("[data-line]").forEach(b=>b.onclick=()=>{ S.line=b.dataset.line; S.dir=0; S.startIdx=0; S.endIdx=9999; S.pickMode="start"; S.editing=null; draw(); });
+  app.querySelectorAll("[data-dir]").forEach(b=>b.onclick=()=>{ S.dir=+b.dataset.dir; S.startIdx=0; S.endIdx=9999; S.pickMode="start"; draw(); });
+  app.querySelectorAll("[data-pick]").forEach(b=>b.onclick=()=>{ S.pickMode=b.dataset.pick; draw(); });
+  app.querySelectorAll("[data-st]").forEach(b=>b.onclick=()=>{
+    const i=+b.dataset.st;
+    if(S.pickMode==="start"){ if(i>=r.length-1) return toast(t.startNotTerminus); S.startIdx=i; if(S.endIdx<=i) S.endIdx=r.length-1; S.pickMode="end"; }
+    else { if(i<=S.startIdx) return toast(t.endAfterStart); S.endIdx=i; }
+    draw();
+  });
+  const ed=$("#edit"); if(ed) ed.onclick=()=>{ S.editing=r.slice(); draw(); };
+  if(S.editing) bindEditor();
+  $("#obs").oninput=e=>{ S.observer=e.target.value; save(K.observer,S.observer); };
+  $("#train").oninput=e=>S.train=e.target.value;
+  $("#tnote").oninput=e=>S.note=e.target.value;
+  $("#go").onclick=startTrip;
+}
+function editorHTML(){
+  const t=T();
+  return `<div class="edit">
+    <p class="hint">${t.editHint}</p>
+    ${S.editing.map((s,i)=>`
+      <div class="er"><input aria-label="${esc(t.stationN(i+1))}" data-ed="${i}" value="${esc(s)}"><button data-del="${i}" aria-label="${esc(t.remove(s))}">✕</button></div>
+      ${i<S.editing.length-1?`<button class="ins" data-ins="${i}">${t.insertHere}</button>`:""}`).join("")}
+    <div class="btnrow"><button class="btn primary" id="esave">${t.saveLine}</button><button class="btn" id="ecancel">${t.cancel}</button><button class="btn" id="ereset">${t.reset}</button></div>
+  </div>`;
+}
+function bindEditor(){
+  const t=T();
+  app.querySelectorAll("[data-ed]").forEach(x=>x.oninput=()=>S.editing[+x.dataset.ed]=x.value);
+  app.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ S.editing.splice(+b.dataset.del,1); draw(); });
+  app.querySelectorAll("[data-ins]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.ins+1; S.editing.splice(i,0,""); draw(); const f=app.querySelector(`[data-ed="${i}"]`); if(f) f.focus(); });
+  $("#ecancel").onclick=()=>{ S.editing=null; draw(); };
+  $("#ereset").onclick=()=>{ const d=DEFAULT_LINES[S.line].stations; S.editing=S.dir===0?d.slice():d.slice().reverse(); draw(); toast(t.resetDone); };
+  $("#esave").onclick=()=>{
+    const list=S.editing.map(s=>s.trim()).filter(Boolean);
+    if(list.length<2) return toast(t.minTwo);
+    const ordered=S.dir===0?list:list.slice().reverse();
+    const def=DEFAULT_LINES[S.line].stations;
+    if(ordered.length===def.length && ordered.every((s,i)=>s===def[i])) delete customLines[S.line]; else customLines[S.line]=ordered;
+    save(K.lines, customLines);
+    S.editing=null; S.startIdx=0; S.endIdx=9999; draw(); toast(t.lineSaved(S.line));
+  };
+}
+function startTrip(){
+  const r=setupRoute();
+  S.active = {
+    id: "T"+Date.now().toString(36).toUpperCase(),
+    line:S.line, dirIndex:S.dir, towards:r[r.length-1], stations:r, startIdx:S.startIdx, endIdx:S.endIdx,
+    observer:S.observer.trim(), train:S.train.trim(), note:S.note.trim(),
+    startedAt:Date.now(), endedAt:null, endedBy:null, events:[], notes:{}
+  };
+  persistActive(); go("log");
+}
+
+/* ---------- logging ---------- */
+let lastPress=0;
+function drawLog(){
+  const t=T(), trip=S.active; if(!trip){ S.screen="setup"; return draw(); }
+  const r=trip.stations, st=tripState(trip), list=stops(trip);
+  const pos=(st.mode==="dep"?st.idx:st.from)-trip.startIdx+1, total=trip.endIdx-trip.startIdx+1;
+  const noteIdx=st.mode==="dep"?st.idx:st.from;
+  app.innerHTML = `<section>
+    <div class="panel">
+      <div class="bar"><div class="badge">${esc(trip.line)}</div><h1>${t.towards} ${esc(r[trip.endIdx])}</h1><button class="iconbtn" id="end">${t.end}</button></div>
+      ${S.confirmEnd?`<div class="confirm"><b>${t.endQ}</b><span class="hint">${t.endHint}</span><div class="btnrow"><button class="btn" id="no">${t.keepLogging}</button><button class="btn primary" id="yes">${t.endTrip}</button></div></div>`:""}
+      <div class="now">
+        <div class="where"><span class="label">${st.mode==="dep"?(st.since?t.atStation:t.readyAt):t.next}</span><b>${esc(r[st.idx])}</b></div>
+        <span class="timer num" id="timer">${st.since?"0:00<span class=\"ds\">.0</span>":"–:––"}</span>
+        <span class="what">${st.since?(st.mode==="dep"?t.dwell:t.run):t.waiting}</span>
+      </div>
+      <button class="big ${st.mode}" id="press">
+        <span class="verb">${st.mode==="dep"?t.depart:t.arrive}</span>
+        <span class="sub">${st.mode==="dep"?t.from:t.to} ${esc(r[st.idx])}</span>
+      </button>
+      <div class="tools">
+        <button class="tool" id="undo" ${trip.events.length?"":"disabled"}>${t.undo}</button>
+        <span class="progress num">${t.progress(pos,total)}</span>
+        <button class="tool" id="note">${t.noteBtn}</button>
+      </div>
+      ${S.noteOpen?`<div class="notebox"><label class="label" for="nt">${esc(t.noteFor(r[noteIdx]))}</label><textarea id="nt">${esc(trip.notes[noteIdx]||"")}</textarea><div class="btnrow"><button class="btn" id="ntc">${t.cancel}</button><button class="btn primary" id="nts">${t.saveNote}</button></div></div>`:""}
+    </div>
+    <div class="log">${timeline(trip, list, st)}</div>
+  </section>`;
+  $("#press").onclick=press;
+  $("#undo").onclick=()=>{ trip.events.pop(); persistActive(); toast(t.undone); draw(); };
+  $("#note").onclick=()=>{ S.noteOpen=!S.noteOpen; draw(); if(S.noteOpen) $("#nt").focus(); };
+  if(S.noteOpen){
+    $("#ntc").onclick=()=>{ S.noteOpen=false; draw(); };
+    $("#nts").onclick=()=>{ const v=$("#nt").value.trim(); if(v) trip.notes[noteIdx]=v; else delete trip.notes[noteIdx]; persistActive(); S.noteOpen=false; toast(t.noteSaved); draw(); };
+  }
+  $("#end").onclick=()=>{ S.confirmEnd=true; draw(); };
+  if(S.confirmEnd){ $("#no").onclick=()=>{ S.confirmEnd=false; draw(); }; $("#yes").onclick=()=>finishTrip("manual"); }
+  const upd=()=>{ if(!st.since) return; const s=fmt(Date.now()-st.since); const el=$("#timer"); if(el) el.innerHTML=s.slice(0,-2)+`<span class="ds">${s.slice(-2)}</span>`; const lv=$("#live"); if(lv) lv.textContent=s; };
+  upd(); tick=setInterval(upd,100);
+}
+function timeline(trip, list, st){
+  const t=T(), r=trip.stations;
+  if(!list.length) return `<p class="hint empty">${t.emptyLog}</p>`;
+  const items=[];
+  list.forEach((s,i)=>{
+    const isLast=i===list.length-1, nxt=list[i+1];
+    const liveDwell=isLast && st.mode==="dep" && s.arr!=null;
+    items.push(`<li class="stn ${liveDwell?"live":""}"><i></i>
+      <span class="name">${esc(r[s.idx])}${trip.notes[s.idx]?`<small>✎ ${esc(trip.notes[s.idx])}</small>`:""}</span>
+      <span class="clk num">${clock(s.arr!=null?s.arr:s.dep)}</span>
+      <span class="v num" ${liveDwell?'id="live"':""}>${s.arr!=null&&s.dep!=null?fmt(s.dep-s.arr):(liveDwell?"":(s.arr!=null?"":t.start))}</span></li>`);
+    if(s.dep!=null && nxt) items.push(`<li class="run"><span></span><span class="k"><b class="num">${fmt(nxt.arr-s.dep)}</b>${t.run}</span></li>`);
+    else if(s.dep!=null && isLast) items.push(`<li class="run live"><span></span><span class="k"><b class="num" id="live"></b>${esc(t.runTo(r[s.idx+1]))}</span></li>`);
+  });
+  return `<div class="log-head"><span></span><span class="label">${t.colStation}</span><span class="label">${t.colArr}</span><span class="label">${t.colDwell}</span></div>
+    <ol class="tl">${items.reverse().join("")}</ol>`;
+}
+function press(){
+  const now=Date.now(); if(now-lastPress<400) return; lastPress=now;   // guard against accidental double tap
+  const trip=S.active, st=tripState(trip), ev={type:st.mode, idx:st.idx, station:trip.stations[st.idx], t:now, ts:isoLocal(now), perf:Math.round(performance.now())};
+  trip.events.push(ev); persistActive(); buzz(); S.noteOpen=false;
+  if(st.mode==="arr" && st.idx===trip.endIdx){ toast(T().arrivedEnd(trip.stations[st.idx])); return finishTrip("auto"); }
+  draw();
+}
+function finishTrip(how){
+  const trip=S.active; trip.endedAt=Date.now(); trip.endedBy=how;
+  S.trips = [trip, ...S.trips.filter(x=>x.id!==trip.id)];
+  persistTrips(); S.active=null; persistActive();
+  S.viewId=trip.id; S.justFinished=trip.id; go("done");
+}
+function resumeTrip(id){
+  const trip=S.trips.find(x=>x.id===id); if(!trip) return;
+  trip.endedAt=null; trip.endedBy=null; S.active=trip; S.trips=S.trips.filter(x=>x.id!==id);
+  persistActive(); persistTrips(); S.justFinished=null; toast(T().resumed); go("log");
+}
+
+/* ---------- done ---------- */
+function viewTrip(){ return S.trips.find(x=>x.id===S.viewId); }
+function drawDone(){
+  const t=T(), trip=viewTrip(); if(!trip){ S.screen="hist"; return draw(); }
+  const sg=segments(trip), tt=totals(trip), name=baseName(trip);
+  const meta=[dateStr(trip.startedAt)+" "+clock(trip.startedAt), trip.observer, trip.train?`${t.trainShort} ${trip.train}`:"", trip.note].filter(Boolean).map(esc).join(" · ");
+  app.innerHTML = `<section class="screen">
+    <div class="bar"><div class="badge">${esc(trip.line)}</div><h1>${S.justFinished===trip.id?t.tripDone:`${esc(trip.stations[trip.startIdx])} → ${esc(tt.endName)}`}</h1><button class="iconbtn" data-go="hist">${t.history}</button></div>
+    <div><div class="trip"><b>${esc(trip.stations[trip.startIdx])} → ${esc(tt.endName)}</b><span class="hint num">${t.segs(tt.legs)}</span></div></div>
+    <p class="hint">${meta}</p>
+    <div class="stats">
+      <div class="stat"><span class="label">${t.total}</span><b class="num">${fmtLong(tt.total)}</b></div>
+      <div class="stat"><span class="label">${t.running}</span><b class="num">${fmtLong(tt.run)}</b></div>
+      <div class="stat"><span class="label">${t.dwelling}</span><b class="num">${fmtLong(tt.dwell)}</b></div>
+    </div>
+    <div class="tblwrap"><table>
+      <thead><tr><th>${t.colStation}</th><th class="n">${t.colArr}</th><th class="n">${t.colDwell}</th><th class="n">${t.colRun}</th><th>${t.colTo}</th></tr></thead>
+      <tbody>${sg.map(x=>`<tr><td>${esc(x.station)}${x.note?` <span title="${esc(x.note)}">✎</span>`:""}</td><td class="n">${x.arr!=null?clock(x.arr):"–"}</td><td class="n">${x.dwell!=null?fmt(x.dwell):"–"}</td><td class="n">${x.run!=null?fmt(x.run):"–"}</td><td>${esc(x.to)}</td></tr>`).join("")}</tbody>
+    </table></div>
+    <div class="exports">
+      <button class="share" id="share">${t.share}</button>
+      <button id="csv">CSV</button>
+      <button id="json">JSON</button>
+      <button id="new">${t.newTrip}</button>
+    </div>
+    ${S.justFinished===trip.id?`<div class="btnrow"><button class="linkbtn" id="resume">${t.resume}</button></div>`:""}
+  </section>`;
+  bindCommon();
+  $("#share").onclick=()=>share([trip], name);
+  $("#csv").onclick=()=>exportOne([trip], name, "csv");
+  $("#json").onclick=()=>exportOne([trip], name, "json");
+  $("#new").onclick=()=>{ S.justFinished=null; S.line=trip.line; S.dir=trip.dirIndex||0; S.startIdx=0; S.endIdx=9999; S.train=""; S.note=""; go("setup"); };
+  const rs=$("#resume"); if(rs) rs.onclick=()=>resumeTrip(trip.id);
+}
+
+/* ---------- history ---------- */
+function drawHist(){
+  const t=T();
+  app.innerHTML = `<section class="screen">
+    <div class="bar"><button class="iconbtn" ${S.active?'data-go="log"':'data-go="setup"'} aria-label="${t.back}">←</button><h1>${t.history}</h1>${langToggle()}</div>
+    ${S.trips.length?`<ul class="hist">${S.trips.map(trip=>{
+      const tt=totals(trip), L=DEFAULT_LINES[trip.line]||DEFAULT_LINES["1"];
+      const sub=[dateStr(trip.startedAt)+" "+clock(trip.startedAt).slice(0,5), trip.observer, t.segs(tt.legs)].filter(Boolean).map(esc).join(" · ");
+      return `<li><div class="row">
+        <button class="open" data-open="${esc(trip.id)}"><div class="badge" style="--line:${L.color};--ink:${L.ink}">${esc(trip.line)}</div><div><div class="t">${esc(trip.stations[trip.startIdx])} → ${esc(tt.endName)}</div><div class="s">${sub}</div></div></button>
+        <div class="acts"><button data-share="${esc(trip.id)}">${t.share.split(" ")[0]}</button><button data-del="${esc(trip.id)}">${t.del}</button></div></div>
+        ${S.confirmDel===trip.id?`<div class="confirm"><b>${t.delQ}</b><div class="btnrow"><button class="btn" data-delno>${t.cancel}</button><button class="btn primary" data-delyes="${esc(trip.id)}">${t.del}</button></div></div>`:""}
+      </li>`;}).join("")}</ul>
+    <div class="btnrow"><button class="btn" id="allcsv">${t.exportAllCsv}</button><button class="btn" id="alljson">${t.exportAllJson}</button></div>`
+    :`<p class="hint empty">${t.noTrips}</p>`}
+    <p class="hint">${t.histHint}</p>
+  </section>`;
+  bindCommon();
+  const find=id=>S.trips.find(x=>x.id===id);
+  app.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{ S.viewId=b.dataset.open; go("done"); });
+  app.querySelectorAll("[data-share]").forEach(b=>b.onclick=()=>{ const tr=find(b.dataset.share); if(tr) share([tr], baseName(tr)); });
+  app.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{ S.confirmDel=b.dataset.del; draw(); });
+  const no=app.querySelector("[data-delno]"); if(no) no.onclick=()=>{ S.confirmDel=null; draw(); };
+  const yes=app.querySelector("[data-delyes]"); if(yes) yes.onclick=()=>{ const id=yes.dataset.delyes; S.trips=S.trips.filter(x=>x.id!==id); if(S.justFinished===id) S.justFinished=null; persistTrips(); S.confirmDel=null; toast(t.delDone); draw(); };
+  const d=new Date(), stamp=`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+  const ac=$("#allcsv"); if(ac) ac.onclick=()=>exportOne(S.trips, `tbane_alle_${stamp}`, "csv");
+  const aj=$("#alljson"); if(aj) aj.onclick=()=>exportOne(S.trips, `tbane_alle_${stamp}`, "json");
+}
+
+draw();
+</script>
+</body>
+</html>
