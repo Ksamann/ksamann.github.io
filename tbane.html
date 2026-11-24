@@ -183,6 +183,29 @@ tr:last-child td{border-bottom:0}
 .hist .acts button{height:40px;padding:0 12px;border-radius:10px;background:var(--surface-2);font-size:14px;font-weight:600}
 .hist .confirm{background:var(--bg)}
 
+.strip{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:10px 14px;border-radius:12px;background:var(--surface);text-align:left;font-size:14px;color:var(--muted)}
+.strip b{color:var(--fg);font-weight:600}
+.strip>span:last-child{font-size:22px;color:var(--fg)}
+.check{display:flex;align-items:center;gap:12px;min-height:48px;font-weight:500}
+.check input{width:24px;height:24px;min-height:0;accent-color:var(--hi);flex:none}
+.earn{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.earn b{font-family:var(--f-display);font-size:22px;color:var(--hi)}
+.chip{font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface-2);border:1px solid var(--hi)}
+.cta.submit{min-height:64px;font-size:22px}
+.exports .share.alt{background:var(--surface);color:var(--fg);font-size:19px;min-height:52px}
+.ok{color:var(--hi)}
+.dots{display:flex;gap:4px;margin-top:4px}
+.dots i{width:22px;height:22px;border-radius:50%;border:2px solid var(--c);display:grid;place-items:center;font-style:normal;font-family:var(--f-display);font-weight:800;font-size:12px;color:var(--muted)}
+.dots i.on{background:var(--c);color:#0d1013}
+.meter{height:14px;border-radius:999px;background:var(--surface);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--hi);border-radius:999px;min-width:4px}
+.badges{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.badges li{background:var(--surface);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:36px 1fr;column-gap:10px;align-items:center;opacity:.45;min-width:0}
+.badges li.on{opacity:1;box-shadow:inset 0 0 0 1px var(--hi)}
+.badges i{grid-row:span 2;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-family:var(--f-display);font-weight:800;font-size:15px;background:var(--surface-2)}
+.badges li.on i{background:var(--hi);color:#0d1013}
+.badges b{font-family:var(--f-display);font-weight:700;font-size:16px;line-height:1.1}
+.badges span{font-size:12px;color:var(--muted);line-height:1.25}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:12px 16px;border-radius:12px;font-weight:600;font-size:14px;max-width:calc(100% - 32px);z-index:20;box-shadow:0 8px 30px rgba(0,0,0,.45)}
 @media (prefers-reduced-motion:reduce){.big{transition:none}}
 </style>
@@ -213,6 +236,17 @@ const DEFAULT_LINES = {
 };
 
 /* =====================================================================
+   TEAMINNSENDING / TEAM SUBMISSION
+   submitEmail: the shared mailbox that collects trips (see tbane-admin-guide.md).
+   Leave empty to hide "Submit to team". It can also be set per phone by opening
+   the app once with ?submit=address@sporveien.no in the link.
+   ===================================================================== */
+const APP_VERSION = "2.0.0";
+const TEAM = { submitEmail: "" };
+/* Quality limits. Legs outside them are flagged for review and earn no points. */
+const Q = { runMin:20, runMax:600, dwellMin:5, dwellMax:300, undoMax:5 };
+
+/* =====================================================================
    TEKSTER / UI STRINGS
    ===================================================================== */
 const I18N = {
@@ -230,7 +264,7 @@ const I18N = {
     next:"Neste", tripDetails:"Turdetaljer", required:"påkrevd", optional:"valgfritt", nameRequired:"Skriv inn navnet ditt for å starte.", detailsHint:"Navnet huskes til neste tur.",
     end:"Avslutt", endQ:"Avslutte turen nå?", endHint:"Det du har logget, blir lagret. Du går videre til eksport.",
     keepLogging:"Fortsett logging", endTrip:"Avslutt tur",
-    atStation:"Står på", readyAt:"Klar på", next:"Mot", dwell:"oppholdstid", run:"kjøretid", waiting:"venter på<br>første avgang",
+    atStation:"Står på", readyAt:"Klar på", nextStop:"Mot", dwell:"oppholdstid", run:"kjøretid", waiting:"venter på<br>første avgang",
     depart:"Avgang", arrive:"Ankomst", from:"fra", to:"til",
     undo:"↶ Angre", noteBtn:"✎ Notat", progress:(a,b)=>`Stasjon <b>${a}</b> av ${b}`,
     noteFor:s=>`Notat for ${s}`, saveNote:"Lagre notat", noteSaved:"Notatet er lagret", undone:"Siste trykk er fjernet",
@@ -251,6 +285,16 @@ const I18N = {
     notExported:"Ikke eksportert", unexported:n=>`${n} ${n===1?"tur er":"turer er"} ikke eksportert ennå.`,
     back:"Tilbake", resumed:"Turen er gjenopptatt", storageOff:"Lagring er ikke tilgjengelig i denne nettleseren. Eksporter turen før du lukker siden.",
     csv:{trip_id:"tur_id",date:"dato",line:"linje",direction:"retning",seq:"sekvens",station:"stasjon",arrival:"ankomst",departure:"avgang",dwell_s:"opphold_s",to_station:"til_stasjon",run_s:"kjoretid_s",station_note:"stasjonsnotat",observer:"registrator",train:"tog",trip_note:"turnotat"},
+    nick:"Kallenavn på ledertavlen", nickHint:"Vises i stedet for navnet ditt.", board:"Vis meg på teamets ledertavle",
+    submit:"Send til teamet", submitted:"Sendt", notSubmitted:"Ikke sendt", submittedOn:d=>`Sendt til teamet ${d}`, resubmit:"Send på nytt",
+    submitOpened:"E-posten er klar. Trykk Send i e-postappen.", submitLong:a=>`Turen er for lang for en vanlig e-post. Filen deles i stedet, og ${a} er kopiert. Lim inn som mottaker.`,
+    mailIntro:"Turdata fra T-bane tidslogger. Ikke endre teksten under.",
+    myStats:"Min statistikk", points:"Poeng", thisMonth:"Denne måneden", legs:"Strekninger", trips:"Turer", streak:"Ukesstreak", weeks:n=>`${n} ${n===1?"uke":"uker"}`,
+    linesCovered:"Linjer", networkCovered:"Nettet du har dekket", badges:"Merker", earned:(a,b)=>`${a} av ${b}`,
+    pointsEarned:n=>`+${n} poeng`, newBadge:n=>`Nytt merke: ${n}`, review:"Til kontroll", reviewHint:"Noen tider ser urealistiske ut. De strekningene gir ikke poeng før de er kontrollert.",
+    howPoints:"Slik får du poeng", pointsRules:"1 poeng per strekning · dobbelt kveld, natt, tidlig morgen og helg · +2 første gang du logger en strekning · +10 for hele linjen fra endestasjon til endestasjon.",
+    boardInfo:"Teamets ledertavle og dekningskart vises i teamdashbordet. Bare kallenavn vises der.",
+    statsStrip:(p,s,b,n)=>`<b>★ ${p}</b> poeng · <b>${s}</b> ${s===1?"uke":"uker"} på rad · <b>${b}</b>/${n} merker`,
     locale:"nb-NO", sep:";", dec:","
   },
   en:{
@@ -267,7 +311,7 @@ const I18N = {
     next:"Next", tripDetails:"Trip details", required:"required", optional:"optional", nameRequired:"Enter your name to start.", detailsHint:"Your name is remembered for the next trip.",
     end:"Finish", endQ:"Finish this trip now?", endHint:"Everything you've logged is saved. You'll go on to export.",
     keepLogging:"Keep logging", endTrip:"Finish trip",
-    atStation:"At", readyAt:"Ready at", next:"Next", dwell:"dwell time", run:"run time", waiting:"waiting for<br>first departure",
+    atStation:"At", readyAt:"Ready at", nextStop:"Next", dwell:"dwell time", run:"run time", waiting:"waiting for<br>first departure",
     depart:"Depart", arrive:"Arrive", from:"from", to:"at",
     undo:"↶ Undo", noteBtn:"✎ Note", progress:(a,b)=>`Station <b>${a}</b> of ${b}`,
     noteFor:s=>`Note for ${s}`, saveNote:"Save note", noteSaved:"Note saved", undone:"Last tap removed",
@@ -288,6 +332,16 @@ const I18N = {
     notExported:"Not exported", unexported:n=>`${n} ${n===1?"trip hasn't":"trips haven't"} been exported yet.`,
     back:"Back", resumed:"Trip resumed", storageOff:"Storage isn't available in this browser. Export the trip before closing the page.",
     csv:{trip_id:"trip_id",date:"date",line:"line",direction:"direction",seq:"seq",station:"station",arrival:"arrival",departure:"departure",dwell_s:"dwell_s",to_station:"to_station",run_s:"run_s",station_note:"station_note",observer:"observer",train:"train",trip_note:"trip_note"},
+    nick:"Leaderboard nickname", nickHint:"Shown instead of your name.", board:"Show me on the team leaderboard",
+    submit:"Submit to team", submitted:"Submitted", notSubmitted:"Not submitted", submittedOn:d=>`Submitted to the team ${d}`, resubmit:"Submit again",
+    submitOpened:"The email is ready. Tap Send in your mail app.", submitLong:a=>`This trip is too long for a plain email. The file is shared instead, and ${a} is copied. Paste it as the recipient.`,
+    mailIntro:"Trip data from the Metro timing logger. Don't edit the text below.",
+    myStats:"My stats", points:"Points", thisMonth:"This month", legs:"Legs", trips:"Trips", streak:"Weekly streak", weeks:n=>`${n} ${n===1?"week":"weeks"}`,
+    linesCovered:"Lines", networkCovered:"Network you've covered", badges:"Badges", earned:(a,b)=>`${a} of ${b}`,
+    pointsEarned:n=>`+${n} points`, newBadge:n=>`New badge: ${n}`, review:"Needs review", reviewHint:"Some times look unrealistic. Those legs earn no points until they have been checked.",
+    howPoints:"How to earn points", pointsRules:"1 point per leg · double in the evening, at night, early morning and at weekends · +2 the first time you log a leg · +10 for a whole line, terminus to terminus.",
+    boardInfo:"The team leaderboard and coverage map are in the team dashboard. Only nicknames are shown there.",
+    statsStrip:(p,s,b,n)=>`<b>★ ${p}</b> points · <b>${s}</b>-week streak · <b>${b}</b>/${n} badges`,
     locale:"en-GB", sep:",", dec:"."
   }
 };
@@ -295,12 +349,17 @@ const I18N = {
 /* =====================================================================
    LAGRING / STORAGE
    ===================================================================== */
-const K = {lang:"tbane.lang", active:"tbane.active", trips:"tbane.trips", lines:"tbane.lines", observer:"tbane.observer"};
+const K = {lang:"tbane.lang", active:"tbane.active", trips:"tbane.trips", lines:"tbane.lines", observer:"tbane.observer", submit:"tbane.submit", nick:"tbane.nick", board:"tbane.board", device:"tbane.device"};
 let storageOk = true;
 function load(key, def){ try{ const v=localStorage.getItem(key); return v==null?def:JSON.parse(v); }catch(e){ storageOk=false; return def; } }
 function save(key, val){ try{ if(val==null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ storageOk=false; return false; } }
 // Ask the browser not to evict our data under storage pressure (granted silently for installed apps on most phones).
 function askPersist(){ try{ const st=navigator.storage; if(st && st.persist) st.persisted().then(p=>p||st.persist()).catch(()=>{}); }catch(e){} }
+
+try{ const q=new URLSearchParams(location.search).get("submit"); if(q && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(q)) save(K.submit, q.trim()); }catch(e){}
+const submitTo = () => load(K.submit, "") || TEAM.submitEmail;
+let deviceId = load(K.device, null);
+if(!deviceId){ deviceId = "D" + Math.random().toString(36).slice(2,10).toUpperCase(); save(K.device, deviceId); }
 
 let lang = load(K.lang, "en");
 if(!I18N[lang]) lang="en";
@@ -311,7 +370,7 @@ const lineStations = n => (customLines[n] && customLines[n].length>1) ? customLi
 
 const S = {
   screen:"setup", line:"5", dir:0, startIdx:0, endIdx:9999, pickMode:"start", editing:null,
-  observer: load(K.observer, ""), train:"", note:"",
+  observer: load(K.observer, ""), train:"", note:"", nick: load(K.nick, ""), board: load(K.board, false), newBadges:[],
   active: load(K.active, null), trips: load(K.trips, []),
   viewId:null, justFinished:null, noteOpen:false, confirmEnd:false, confirmDel:null
 };
@@ -371,6 +430,85 @@ function totals(trip){
     run: sg.reduce((a,x)=>a+(x.run||0),0), dwell: sg.reduce((a,x)=>a+(x.dwell||0),0), legs: sg.filter(x=>x.run!=null).length,
     endName: sg.length ? sg[sg.length-1].station : trip.stations[trip.startIdx] };
 }
+/* ---------- quality ---------- */
+function quality(trip){
+  const flags=[];
+  segments(trip).forEach(x=>{
+    if(x.run!=null){ if(x.run<Q.runMin*1000) flags.push({code:"run_short",seq:x.seq,station:x.station}); else if(x.run>Q.runMax*1000) flags.push({code:"run_long",seq:x.seq,station:x.station}); }
+    if(x.dwell!=null){ if(x.dwell<Q.dwellMin*1000) flags.push({code:"dwell_short",seq:x.seq,station:x.station}); else if(x.dwell>Q.dwellMax*1000) flags.push({code:"dwell_long",seq:x.seq,station:x.station}); }
+  });
+  if((trip.undos||0)>=Q.undoMax) flags.push({code:"many_undos",count:trip.undos});
+  trip.events.forEach((e,i)=>{ if(i && e.t<trip.events[i-1].t) flags.push({code:"clock_jump",seq:i}); });
+  const st=stops(trip), lastIdx=st.length?st[st.length-1].idx:trip.startIdx;
+  if(trip.endedBy==="manual" && lastIdx<trip.endIdx) flags.push({code:"ended_early"});
+  return {flags, status: flags.some(f=>f.code!=="ended_early") ? "review" : "ok"};
+}
+
+/* ---------- points & badges ---------- */
+const NETWORK_LEGS = (()=>{ const s=new Set(); Object.values(DEFAULT_LINES).forEach(L=>L.stations.forEach((a,i)=>{ const b=L.stations[i+1]; if(b) s.add(a<b?a+"|"+b:b+"|"+a); })); return s; })();
+const offPeak = t => { const d=new Date(t), h=d.getHours(), w=d.getDay(); return h<7 || h>=20 || w===0 || w===6; };
+// Points for one trip. `seen` holds directed legs from earlier trips and is updated.
+function tripPoints(trip, seen){
+  const q=quality(trip), bad=new Set(q.flags.filter(f=>f.seq&&f.code!=="clock_jump").map(f=>f.seq));
+  if(q.flags.some(f=>f.code==="clock_jump"||f.code==="many_undos")) return {points:0, legs:0, fresh:0, status:q.status};
+  let points=0, legs=0, fresh=0;
+  segments(trip).forEach(x=>{
+    if(x.run==null || bad.has(x.seq)) return;
+    legs++; let v = offPeak(x.dep) ? 2 : 1;
+    const k=`${trip.line}:${x.station}>${x.to}`; if(!seen.has(k)){ seen.add(k); v+=2; fresh++; }
+    points+=v;
+  });
+  if(trip.endedBy==="auto" && trip.startIdx===0 && trip.endIdx===trip.stations.length-1 && q.status==="ok") points+=10;
+  return {points, legs, fresh, status:q.status};
+}
+const BADGES = [
+  {id:"first",    icon:"1",  en:["First leg","Log your first leg"],                     no:["Første strekning","Logg din første strekning"],            test:s=>s.legs>=1},
+  {id:"legs50",   icon:"50", en:["50 legs","Log 50 legs"],                               no:["50 strekninger","Logg 50 strekninger"],                   test:s=>s.legs>=50},
+  {id:"legs250",  icon:"250",en:["250 legs","Log 250 legs"],                             no:["250 strekninger","Logg 250 strekninger"],                 test:s=>s.legs>=250},
+  {id:"alllines", icon:"5",  en:["All five lines","Log a leg on every line"],            no:["Alle fem linjer","Logg en strekning på hver linje"],      test:s=>s.lines.size>=5},
+  {id:"ring",     icon:"◯",  en:["Round the Ring","Log Sinsen–Storo–Nydalen–Ullevål stadion on line 5"], no:["Rundt Ringen","Logg Sinsen–Storo–Nydalen–Ullevål stadion på linje 5"], test:s=>s.ring},
+  {id:"fullline", icon:"⇥",  en:["End to end","Log a whole line, terminus to terminus"], no:["Ende til ende","Logg en hel linje fra endestasjon til endestasjon"], test:s=>s.fullLine},
+  {id:"clean",    icon:"✓",  en:["Clean run","10+ legs in one trip, no undo, no flags"], no:["Ren tur","10+ strekninger på én tur, uten angre og flagg"], test:s=>s.clean},
+  {id:"night",    icon:"☾",  en:["Night owl","Log a leg between 22:00 and 05:00"],       no:["Nattugle","Logg en strekning mellom 22 og 05"],           test:s=>s.night},
+  {id:"early",    icon:"☀",  en:["Early bird","Log a leg between 05:00 and 07:00"],      no:["Morgenfugl","Logg en strekning mellom 05 og 07"],         test:s=>s.early},
+  {id:"weekend",  icon:"W",  en:["Weekend shift","Log a leg on a Saturday or Sunday"],   no:["Helgevakt","Logg en strekning en lørdag eller søndag"],   test:s=>s.weekend},
+  {id:"kolsas",   icon:"K",  en:["Kolsås pioneer","Log a leg west of Smestad on line 3"],no:["Kolsåspioneren","Logg en strekning vest for Smestad på linje 3"], test:s=>s.kolsas},
+  {id:"streak4",  icon:"4",  en:["Four in a row","Log at least once a week for 4 weeks"],no:["Fire på rad","Logg minst én gang i uka i 4 uker"],         test:s=>s.bestStreak>=4}
+];
+const KOLSAS = new Set(DEFAULT_LINES["3"].stations.slice(0, DEFAULT_LINES["3"].stations.indexOf("Smestad")));
+const RING = ["Sinsen|Storo","Nydalen|Storo","Nydalen|Ullevål stadion"];
+const weekNo = t => { const d=new Date(t); d.setHours(0,0,0,0); d.setDate(d.getDate()-((d.getDay()+6)%7)); return Math.round(d.getTime()/604800000); };
+function computeStats(trips){
+  const list=trips.slice().sort((a,b)=>a.startedAt-b.startedAt), seen=new Set(), per={}, undirected=new Set(), weeks=new Set();
+  const now=new Date(), mk=now.getFullYear()*12+now.getMonth();
+  const s={points:0, month:0, legs:0, trips:0, lines:new Set(), ring:false, fullLine:false, clean:false, night:false, early:false, weekend:false, kolsas:false};
+  list.forEach(tr=>{
+    const r=tripPoints(tr, seen); per[tr.id]=r;
+    s.points+=r.points; s.legs+=r.legs; if(r.legs){ s.trips++; s.lines.add(tr.line); weeks.add(weekNo(tr.startedAt)); }
+    const d=new Date(tr.startedAt); if(d.getFullYear()*12+d.getMonth()===mk) s.month+=r.points;
+    if(!r.legs) return;
+    const q=quality(tr), sg=segments(tr).filter(x=>x.run!=null);
+    const ring=new Set();
+    sg.forEach(x=>{
+      const k=x.station<x.to?x.station+"|"+x.to:x.to+"|"+x.station; undirected.add(k); if(tr.line==="5") ring.add(k);
+      const h=new Date(x.dep).getHours(), w=new Date(x.dep).getDay();
+      if(h>=22||h<5) s.night=true; if(h>=5&&h<7) s.early=true; if(w===0||w===6) s.weekend=true;
+      if(tr.line==="3" && (KOLSAS.has(x.station)||KOLSAS.has(x.to))) s.kolsas=true;
+    });
+    if(RING.every(k=>ring.has(k))) s.ring=true;
+    if(tr.endedBy==="auto" && tr.startIdx===0 && tr.endIdx===tr.stations.length-1) s.fullLine=true;
+    if(sg.length>=10 && !(tr.undos>0) && q.flags.length===0) s.clean=true;
+  });
+  let w=weekNo(Date.now()); if(!weeks.has(w)) w--; let cur=0; while(weeks.has(w)){ cur++; w--; }
+  let best=0, run=0, prev=null; [...weeks].sort((a,b)=>a-b).forEach(x=>{ run = prev!=null && x===prev+1 ? run+1 : 1; best=Math.max(best,run); prev=x; });
+  s.streak=cur; s.bestStreak=best;
+  s.coverage = [...undirected].filter(k=>NETWORK_LEGS.has(k)).length / NETWORK_LEGS.size;
+  s.badges = BADGES.filter(b=>b.test(s)).map(b=>b.id);
+  s.per=per;
+  return s;
+}
+const badgeName = id => { const b=BADGES.find(x=>x.id===id); return b ? b[lang][0] : id; };
+
 const persistActive = () => save(K.active, S.active);
 const persistTrips = () => save(K.trips, S.trips);
 function markExported(trips){ const now=Date.now(); trips.forEach(x=>x.exportedAt=now); persistTrips(); }
@@ -398,8 +536,9 @@ function tripJSON(trip){
   return {
     id:trip.id, line:trip.line, direction:trip.towards, direction_index:trip.dirIndex||0,
     start_station:trip.stations[trip.startIdx], start_index:trip.startIdx, planned_end_station:trip.stations[trip.endIdx], planned_end_index:trip.endIdx,
-    observer:trip.observer, train:trip.train, note:trip.note,
+    observer:trip.observer, nickname:trip.nick||"", leaderboard:!!trip.board, train:trip.train, note:trip.note,
     started_at:isoLocal(trip.startedAt), ended_at:trip.endedAt?isoLocal(trip.endedAt):null, ended_by:trip.endedBy||null,
+    undo_count:trip.undos||0, quality:(q=>({status:q.status, flags:q.flags}))(quality(trip)),
     totals:{total_s:+(tt.total/1000).toFixed(3), run_s:+(tt.run/1000).toFixed(3), dwell_s:+(tt.dwell/1000).toFixed(3), legs:tt.legs},
     segments:segments(trip).map(x=>({seq:x.seq, station:x.station, station_index:x.idx,
       arrival:x.arr!=null?isoLocal(x.arr):null, departure:x.dep!=null?isoLocal(x.dep):null,
@@ -408,7 +547,41 @@ function tripJSON(trip){
     route:trip.stations
   };
 }
-const toJSON = trips => JSON.stringify(trips.length===1 ? {app:"tbane-tidslogger", version:1, trip:tripJSON(trips[0])} : {app:"tbane-tidslogger", version:1, trips:trips.map(tripJSON)}, null, 2);
+const toJSON = trips => JSON.stringify(trips.length===1 ? {app:"tbane-tidslogger", version:2, app_version:APP_VERSION, trip:tripJSON(trips[0])} : {app:"tbane-tidslogger", version:2, app_version:APP_VERSION, trips:trips.map(tripJSON)}, null, 2);
+
+/* ---------- team submission ---------- */
+const MARK_START="----- TBANE-JSON START -----", MARK_END="----- TBANE-JSON END -----";
+const r1 = ms => ms==null ? null : Math.round(ms/100)/10;
+function submissionJSON(trip){
+  const tt=totals(trip), q=quality(trip), pts=computeStats(S.trips).per[trip.id];
+  return {
+    app:"tbane-tidslogger", kind:"submission", version:2, app_version:APP_VERSION, device_id:deviceId,
+    trip_id:trip.id, line:String(trip.line), direction:trip.towards,
+    start_station:trip.stations[trip.startIdx], end_station:tt.endName, planned_end_station:trip.stations[trip.endIdx],
+    started_at:isoLocal(trip.startedAt), ended_at:trip.endedAt?isoLocal(trip.endedAt):null, ended_by:trip.endedBy||"",
+    observer:trip.observer, nickname:trip.nick||"", leaderboard:!!trip.board, train:trip.train||"", note:trip.note||"",
+    legs:tt.legs, total_s:r1(tt.total), run_s:r1(tt.run), dwell_s:r1(tt.dwell), undo_count:trip.undos||0,
+    quality:q.status, flags:q.flags.map(f=>f.code+(f.seq?"@"+f.seq:"")).join(" "), points:pts?pts.points:0,
+    segments:segments(trip).map(x=>({seq:x.seq, station:x.station, arr:x.arr!=null?isoLocal(x.arr):null, dep:x.dep!=null?isoLocal(x.dep):null,
+      dwell_s:r1(x.dwell), to:x.to||null, run_s:r1(x.run), note:x.note||""}))
+  };
+}
+async function submitTrip(trip){
+  const t=T(), to=submitTo(); if(!to) return;
+  const tt=totals(trip), json=JSON.stringify(submissionJSON(trip));
+  const subject=`[TBANE] ${trip.id} L${trip.line} ${trip.stations[trip.startIdx]} - ${tt.endName}`;
+  const body=`${t.mailIntro}\n\n${MARK_START}\n${json}\n${MARK_END}\n`;
+  const url=`mailto:${encodeURIComponent(to).replace(/%40/g,"@")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  if(url.length<=15000){ window.location.href=url; toast(t.submitOpened); }
+  else {
+    try{ await navigator.clipboard.writeText(to); }catch(e){}
+    const file=new File([json], `${trip.id}.json`, {type:"application/json"});
+    try{ if(navigator.canShare && navigator.canShare({files:[file]})) await navigator.share({files:[file], title:subject, text:subject}); else download(file); }
+    catch(e){ if(e && e.name==="AbortError") return; download(file); }
+    toast(t.submitLong(to));
+  }
+  trip.submittedAt=Date.now(); if(!trip.exportedAt) trip.exportedAt=trip.submittedAt; persistTrips(); draw();
+}
 function makeFiles(trips, name){
   return {
     csv: new File([toCSV(trips)], name+".csv", {type:"text/csv"}),
@@ -454,7 +627,7 @@ function tripFromJSON(o){
   const str = v => v==null ? "" : String(v);
   return { id:String(o.id), line, dirIndex: o.direction_index===1 ? 1 : o.direction_index===0 ? 0 : (route[route.length-1]===DEFAULT_LINES[line].stations[0] ? 1 : 0),
     towards: str(o.direction)||route[route.length-1], stations:route, startIdx, endIdx,
-    observer:str(o.observer), train:str(o.train), note:str(o.note), startedAt,
+    observer:str(o.observer), nick:str(o.nickname), board:!!o.leaderboard, undos:Number(o.undo_count)||0, train:str(o.train), note:str(o.note), startedAt,
     endedAt: Date.parse(o.ended_at) || lastT, endedBy: str(o.ended_by)||"manual", events, notes, exportedAt: Date.now() };
 }
 async function importFiles(files){
@@ -498,7 +671,7 @@ function draw(){
   const ln = S.screen==="log"&&S.active ? S.active.line : S.screen==="done"&&viewTrip() ? viewTrip().line : S.line;
   setAccent(ln);
   wantWake(S.screen==="log");
-  ({setup:drawSetup, details:drawDetails, log:drawLog, done:drawDone, hist:drawHist})[S.screen]();
+  ({setup:drawSetup, details:drawDetails, log:drawLog, done:drawDone, hist:drawHist, stats:drawStats})[S.screen]();
 }
 const helpLink = () => `<a class="iconbtn helpbtn" href="tbane-guide.html" aria-label="${T().help}" title="${T().help}">?</a>`;
 const langToggle = () => `<div class="lang" role="group" aria-label="Språk / Language"><button data-lang="no" aria-pressed="${lang==="no"}">NO</button><button data-lang="en" aria-pressed="${lang==="en"}">EN</button></div>`;
@@ -514,6 +687,7 @@ function drawSetup(){
   const n=S.endIdx-S.startIdx;
   app.innerHTML = `<section class="screen">
     <div class="bar"><h1 class="wrap">${t.appTitle}</h1>${langToggle()}${helpLink()}<button class="iconbtn" data-go="hist">${t.history}</button></div>
+    ${statsStrip()}
     <div class="field"><span class="label">${t.line}</span>
       <div class="lines">${Object.entries(DEFAULT_LINES).map(([k,v])=>`<button style="--c:${v.color};--k:${v.ink}" aria-pressed="${k===S.line}" data-line="${k}">${k}</button>`).join("")}</div></div>
     <div class="field"><span class="label">${t.direction}</span>
@@ -564,6 +738,8 @@ function drawDetails(){
       <div class="field"><label class="label" for="obs">${t.observer} <span class="req">· ${t.required}</span></label><input id="obs" value="${esc(S.observer)}" autocomplete="name" enterkeyhint="next" required></div>
       <div class="field"><label class="label" for="train">${t.train} <span class="opt">· ${t.optional}</span></label><input id="train" value="${esc(S.train)}" inputmode="numeric" autocomplete="off" enterkeyhint="next"></div>
       <div class="field"><label class="label" for="tnote">${t.note} <span class="opt">· ${t.optional}</span></label><input id="tnote" value="${esc(S.note)}" autocomplete="off" enterkeyhint="go"></div>
+      <label class="check"><input type="checkbox" id="board" ${S.board?"checked":""}><span>${t.board}</span></label>
+      <div class="field" id="nickf" ${S.board?"":"hidden"}><label class="label" for="nick">${t.nick}</label><input id="nick" value="${esc(S.nick)}" autocomplete="nickname" maxlength="24" enterkeyhint="go"><span class="hint">${t.nickHint}</span></div>
       <p class="hint" id="dh">${ok()?t.detailsHint:`<span class="warn">${t.nameRequired}</span>`}</p>
       <div class="dock"><button class="cta" id="go" type="submit" ${ok()?"":"disabled"}>${t.startLogging}</button></div>
     </form>
@@ -573,6 +749,8 @@ function drawDetails(){
   $("#obs").oninput=e=>{ S.observer=e.target.value; save(K.observer,S.observer); upd(); };
   $("#train").oninput=e=>S.train=e.target.value;
   $("#tnote").oninput=e=>S.note=e.target.value;
+  $("#board").onchange=e=>{ S.board=e.target.checked; save(K.board,S.board); $("#nickf").hidden=!S.board; if(S.board) $("#nick").focus(); };
+  $("#nick").oninput=e=>{ S.nick=e.target.value; save(K.nick,S.nick); };
   const order=["obs","train","tnote"];
   order.forEach((id,i)=>$("#"+id).addEventListener("keydown",e=>{ if(e.key==="Enter" && i<order.length-1){ e.preventDefault(); $("#"+order[i+1]).focus(); } }));
   $("#df").onsubmit=e=>{ e.preventDefault(); if(!ok()){ $("#obs").focus(); return; } startTrip(); };
@@ -611,6 +789,7 @@ function startTrip(){
     id: "T"+Date.now().toString(36).toUpperCase(),
     line:S.line, dirIndex:S.dir, towards:r[r.length-1], stations:r, startIdx:S.startIdx, endIdx:S.endIdx,
     observer:S.observer.trim(), train:S.train.trim(), note:S.note.trim(),
+    nick:S.board?S.nick.trim():"", board:!!S.board, undos:0,
     startedAt:Date.now(), endedAt:null, endedBy:null, events:[], notes:{}
   };
   persistActive(); askPersist(); go("log");
@@ -628,7 +807,7 @@ function drawLog(){
       <div class="bar"><div class="badge">${esc(trip.line)}</div><h1>${t.towards} ${esc(r[trip.endIdx])}</h1><button class="iconbtn" id="end">${t.end}</button></div>
       ${S.confirmEnd?`<div class="confirm"><b>${t.endQ}</b><span class="hint">${t.endHint}</span><div class="btnrow"><button class="btn" id="no">${t.keepLogging}</button><button class="btn primary" id="yes">${t.endTrip}</button></div></div>`:""}
       <div class="now">
-        <div class="where"><span class="label">${st.mode==="dep"?(st.since?t.atStation:t.readyAt):t.next}</span><b>${esc(r[st.idx])}</b></div>
+        <div class="where"><span class="label">${st.mode==="dep"?(st.since?t.atStation:t.readyAt):t.nextStop}</span><b>${esc(r[st.idx])}</b></div>
         <span class="timer num" id="timer">${st.since?"0:00<span class=\"ds\">.0</span>":"–:––"}</span>
         <span class="what">${st.since?(st.mode==="dep"?t.dwell:t.run):t.waiting}</span>
       </div>
@@ -649,7 +828,7 @@ function drawLog(){
   // Timestamp on finger-down, not on release (click fires 50–150 ms later, by a varying amount).
   pb.onpointerdown=e=>{ if(!e.isPrimary || e.button!==0) return; e.preventDefault(); lastPointer=Date.now(); press(e); };
   pb.onclick=e=>{ if(e.detail>0 && Date.now()-lastPointer<3000) return; press(null); };   // keyboard, switch control, screen readers
-  $("#undo").onclick=()=>{ trip.events.pop(); persistActive(); toast(t.undone); draw(); };
+  $("#undo").onclick=()=>{ trip.events.pop(); trip.undos=(trip.undos||0)+1; persistActive(); toast(t.undone); draw(); };
   $("#note").onclick=()=>{ S.noteOpen=!S.noteOpen; draw(); if(S.noteOpen) $("#nt").focus(); };
   if(S.noteOpen){
     $("#ntc").onclick=()=>{ S.noteOpen=false; draw(); };
@@ -689,7 +868,9 @@ function press(e){
 }
 function finishTrip(how){
   const trip=S.active; trip.endedAt=Date.now(); trip.endedBy=how;
+  const before=new Set(computeStats(S.trips).badges);
   S.trips = [trip, ...S.trips.filter(x=>x.id!==trip.id)];
+  S.newBadges = computeStats(S.trips).badges.filter(b=>!before.has(b));
   persistTrips(); S.active=null; persistActive();
   S.viewId=trip.id; S.justFinished=trip.id; go("done");
 }
@@ -703,12 +884,15 @@ function resumeTrip(id){
 function viewTrip(){ return S.trips.find(x=>x.id===S.viewId); }
 function drawDone(){
   const t=T(), trip=viewTrip(); if(!trip){ S.screen="hist"; return draw(); }
-  const sg=segments(trip), tt=totals(trip), name=baseName(trip);
+  const sg=segments(trip), tt=totals(trip), name=baseName(trip), q=quality(trip), pts=computeStats(S.trips).per[trip.id], to=submitTo();
+  const fresh=S.justFinished===trip.id;
   const meta=[dateStr(trip.startedAt)+" "+clock(trip.startedAt), trip.observer, trip.train?`${t.trainShort} ${trip.train}`:"", trip.note].filter(Boolean).map(esc).join(" · ");
   app.innerHTML = `<section class="screen">
     <div class="bar"><div class="badge">${esc(trip.line)}</div><h1>${S.justFinished===trip.id?t.tripDone:`${esc(trip.stations[trip.startIdx])} → ${esc(tt.endName)}`}</h1><button class="iconbtn" data-go="hist">${t.history}</button></div>
     <div><div class="trip"><b>${esc(trip.stations[trip.startIdx])} → ${esc(tt.endName)}</b><span class="hint num">${t.segs(tt.legs)}</span></div></div>
     <p class="hint">${meta}</p>
+    ${pts?`<div class="earn"><b class="num">${t.pointsEarned(pts.points)}</b>${fresh&&S.newBadges.length?S.newBadges.map(b=>`<span class="chip">${esc(t.newBadge(badgeName(b)))}</span>`).join(""):""}</div>`:""}
+    ${q.status==="review"?`<p class="hint warn">${t.review}: ${t.reviewHint}</p>`:""}
     <div class="stats">
       <div class="stat"><span class="label">${t.total}</span><b class="num">${fmtLong(tt.total)}</b></div>
       <div class="stat"><span class="label">${t.running}</span><b class="num">${fmtLong(tt.run)}</b></div>
@@ -718,8 +902,10 @@ function drawDone(){
       <thead><tr><th>${t.colStation}</th><th class="n">${t.colArr}</th><th class="n">${t.colDwell}</th><th class="n">${t.colRun}</th><th>${t.colTo}</th></tr></thead>
       <tbody>${sg.map(x=>`<tr><td>${esc(x.station)}${x.note?` <span title="${esc(x.note)}">✎</span>`:""}</td><td class="n">${x.arr!=null?clock(x.arr):"–"}</td><td class="n">${x.dwell!=null?fmt(x.dwell):"–"}</td><td class="n">${x.run!=null?fmt(x.run):"–"}</td><td>${esc(x.to)}</td></tr>`).join("")}</tbody>
     </table></div>
+    ${to?`<button class="cta submit" id="submit">${trip.submittedAt?t.resubmit:t.submit}</button>
+    <p class="hint">${trip.submittedAt?`✓ ${esc(t.submittedOn(dateStr(trip.submittedAt)+" "+clock(trip.submittedAt).slice(0,5)))}`:esc(to)}</p>`:""}
     <div class="exports">
-      <button class="share" id="share">${t.share}</button>
+      <button class="share${to?" alt":""}" id="share">${t.share}</button>
       <button id="csv">CSV</button>
       <button id="json">JSON</button>
       <button id="new">${t.newTrip}</button>
@@ -728,10 +914,38 @@ function drawDone(){
   </section>`;
   bindCommon();
   $("#share").onclick=()=>share([trip], name);
+  const sb=$("#submit"); if(sb) sb.onclick=()=>submitTrip(trip);
   $("#csv").onclick=()=>exportOne([trip], name, "csv");
   $("#json").onclick=()=>exportOne([trip], name, "json");
   $("#new").onclick=()=>{ S.justFinished=null; S.line=trip.line; S.dir=trip.dirIndex||0; S.startIdx=0; S.endIdx=9999; S.train=""; S.note=""; go("setup"); };
   const rs=$("#resume"); if(rs) rs.onclick=()=>resumeTrip(trip.id);
+}
+
+/* ---------- my stats ---------- */
+function statsStrip(){
+  const s=computeStats(S.trips);
+  return `<button class="strip" data-go="stats"><span>${T().statsStrip(s.points, s.streak, s.badges.length, BADGES.length)}</span><span aria-hidden="true">›</span></button>`;
+}
+function drawStats(){
+  const t=T(), s=computeStats(S.trips);
+  app.innerHTML = `<section class="screen">
+    <div class="bar"><button class="iconbtn" data-go="setup" aria-label="${t.back}">←</button><h1>${t.myStats}</h1>${langToggle()}</div>
+    <div class="stats">
+      <div class="stat"><span class="label">${t.points}</span><b class="num">${s.points}</b></div>
+      <div class="stat"><span class="label">${t.thisMonth}</span><b class="num">${s.month}</b></div>
+      <div class="stat"><span class="label">${t.streak}</span><b class="num">${t.weeks(s.streak)}</b></div>
+      <div class="stat"><span class="label">${t.legs}</span><b class="num">${s.legs}</b></div>
+      <div class="stat"><span class="label">${t.trips}</span><b class="num">${s.trips}</b></div>
+      <div class="stat"><span class="label">${t.linesCovered}</span><span class="dots">${Object.entries(DEFAULT_LINES).map(([k,v])=>`<i style="--c:${v.color}" class="${s.lines.has(k)?"on":""}" title="${k}">${k}</i>`).join("")}</span></div>
+    </div>
+    <div class="field"><span class="label">${t.networkCovered}</span>
+      <div class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(s.coverage*100)}"><i style="width:${(s.coverage*100).toFixed(1)}%"></i></div>
+      <span class="hint num">${Math.round(s.coverage*100)} % · ${Math.round(s.coverage*NETWORK_LEGS.size)}/${NETWORK_LEGS.size}</span></div>
+    <div class="field"><span class="label">${t.badges} · ${t.earned(s.badges.length, BADGES.length)}</span>
+      <ul class="badges">${BADGES.map(b=>{ const on=s.badges.includes(b.id); return `<li class="${on?"on":""}"><i>${b.icon}</i><b>${esc(b[lang][0])}</b><span>${esc(b[lang][1])}</span></li>`; }).join("")}</ul></div>
+    <div class="field"><span class="label">${t.howPoints}</span><p class="hint">${t.pointsRules}</p>${submitTo()?`<p class="hint">${t.boardInfo}</p>`:""}</div>
+  </section>`;
+  bindCommon();
 }
 
 /* ---------- history ---------- */
@@ -742,7 +956,7 @@ function drawHist(){
     ${S.trips.length?`<ul class="hist">${S.trips.map(trip=>{
       const tt=totals(trip), L=DEFAULT_LINES[trip.line]||DEFAULT_LINES["1"];
       const sub=[dateStr(trip.startedAt)+" "+clock(trip.startedAt).slice(0,5), trip.observer, t.segs(tt.legs)].filter(Boolean).map(esc).join(" · ")
-        + (trip.exportedAt ? "" : ` · <span class="warn">${t.notExported}</span>`);
+        + (submitTo() ? (trip.submittedAt ? ` · <span class="ok">✓ ${t.submitted}</span>` : ` · <span class="warn">${t.notSubmitted}</span>`) : (trip.exportedAt ? "" : ` · <span class="warn">${t.notExported}</span>`));
       return `<li><div class="row">
         <button class="open" data-open="${esc(trip.id)}"><div class="badge" style="--line:${L.color};--ink:${L.ink}">${esc(trip.line)}</div><div><div class="t">${esc(trip.stations[trip.startIdx])} → ${esc(tt.endName)}</div><div class="s">${sub}</div></div></button>
         <div class="acts"><button data-share="${esc(trip.id)}">${t.share.split(" ")[0]}</button><button data-del="${esc(trip.id)}">${t.del}</button></div></div>

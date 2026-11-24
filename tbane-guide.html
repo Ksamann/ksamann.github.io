@@ -79,7 +79,9 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
       <li><a href="#details">Trip details</a></li>
       <li><a href="#log">Logging</a></li>
       <li><a href="#finish">Finishing a trip</a></li>
+      <li><a href="#team">Submitting to the team</a></li>
       <li><a href="#export">Exporting and sharing</a></li>
+      <li><a href="#points">Points and badges</a></li>
       <li><a href="#history">History</a></li>
       <li><a href="#tips">Tips and troubleshooting</a></li>
     </ol>
@@ -109,6 +111,7 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
     <li><b>Observer</b> (required): your name. It is remembered for the next trip.</li>
     <li><b>Train / unit</b> (optional): train number or unit number.</li>
     <li><b>Note</b> (optional): anything about the trip, such as rush hour or delays.</li>
+    <li><b>Show me on the team leaderboard</b> (optional): tick it and enter a <b>nickname</b> if you want to appear on the team leaderboard. Only the nickname is shown there, never your name. Both are remembered.</li>
   </ul>
   <p>Tap <span class="btn">Start logging</span>. It stays disabled until a name is entered.</p>
 
@@ -137,7 +140,20 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
     <li>If the trip ended by mistake, tap <b>↶ Resume trip</b> on the summary to continue logging.</li>
   </ul>
 
-  <h2 id="export"><span class="n">6</span>Exporting and sharing</h2>
+  <h2 id="team"><span class="n">6</span>Submitting to the team</h2>
+  <p>If your team collects trips centrally, you get a link to the app with the team's address in it. Open it once; the phone remembers the address. The trip summary then shows <span class="btn">Submit to team</span>.</p>
+  <ol>
+    <li>Tap <span class="btn">Submit to team</span>. Your mail app opens with the trip ready to send, addressed to the team mailbox.</li>
+    <li>Tap <b>Send</b>. Don't edit the text in the email; it is the trip data.</li>
+    <li>You get a reply when the trip has been received.</li>
+  </ol>
+  <ul>
+    <li>The trip is sent from your work email, so you don't need to type who you are.</li>
+    <li>History marks each trip <b>✓ Submitted</b> or <b>Not submitted</b>. Use <span class="btn">Submit again</span> if you edited something or the email wasn't sent. A re-submitted trip replaces the earlier one.</li>
+    <li>Trip data goes only to Sporveien's own Microsoft 365. The app's web address is only used to load the app.</li>
+  </ul>
+
+  <h2 id="export"><span class="n">7</span>Exporting and sharing</h2>
   <ul>
     <li><span class="btn">Share (email, Teams …)</span> opens the phone's share menu with both the CSV and the JSON file attached. Pick Mail, Outlook, Teams or similar.</li>
     <li><span class="btn">CSV</span> or <span class="btn">JSON</span> downloads the file to the phone.</li>
@@ -157,7 +173,26 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
   </table></div>
   <div class="note"><p><b>CSV format follows the app language.</b> In English: comma separator and decimal point. In Norwegian: semicolon separator, decimal comma and Norwegian column names, which opens correctly in Norwegian Excel. Switch language before exporting if the recipient needs the other format. The JSON file always uses English keys and also contains every individual tap.</p></div>
 
-  <h2 id="history"><span class="n">7</span>History</h2>
+  <h2 id="points"><span class="n">8</span>Points and badges</h2>
+  <p>The strip at the top of the setup screen shows your points, weekly streak and badges. Tap it to open <b>My stats</b>.</p>
+  <div class="tblwrap"><table>
+    <thead><tr><th>You get</th><th>For</th></tr></thead>
+    <tbody>
+      <tr><td>1 point</td><td>Each leg you log</td></tr>
+      <tr><td>2 points</td><td>Each leg in the evening or at night (20:00–07:00) or at the weekend, where data is scarce</td></tr>
+      <tr><td>+2</td><td>The first time you log a leg (in that direction, on that line)</td></tr>
+      <tr><td>+10</td><td>A whole line from terminus to terminus</td></tr>
+    </tbody>
+  </table></div>
+  <ul>
+    <li><b>Quality counts.</b> Legs with unrealistic times (run under 20 s or over 10 min, dwell under 5 s or over 5 min) are marked <b>Needs review</b> and earn no points until checked. Trips with many undos or a clock jump earn no points.</li>
+    <li><b>Weekly streak:</b> log at least one trip each calendar week.</li>
+    <li><b>Badges</b> include <i>All five lines</i>, <i>Round the Ring</i>, <i>End to end</i>, <i>Night owl</i>, <i>Early bird</i>, <i>Clean run</i> and <i>Kolsås pioneer</i>. Locked badges are shown faded with what you need to do.</li>
+    <li><b>Network you've covered</b> shows the share of all T-bane legs you have logged at least once.</li>
+    <li>The team leaderboard, monthly prizes and the coverage map of where data is missing are in the team's dashboard. The team may give extra points for legs that few people have logged.</li>
+  </ul>
+
+  <h2 id="history"><span class="n">9</span>History</h2>
   <ul>
     <li>Tap <span class="btn">History</span> on the setup screen to see all trips stored on the phone.</li>
     <li>Tap a trip to see its summary and export it again.</li>
@@ -167,7 +202,7 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
     <li><span class="btn">Import (JSON)</span> reads JSON files exported from this app back in, from this phone or a colleague's. Use it to restore a backup on a new phone or to gather trips in one place. Trips that are already on the phone are skipped.</li>
   </ul>
 
-  <h2 id="tips"><span class="n">8</span>Tips and troubleshooting</h2>
+  <h2 id="tips"><span class="n">10</span>Tips and troubleshooting</h2>
   <ul>
     <li><b>Data lives only on this phone.</b> Export or share trips before clearing browser data or switching phones. Private/incognito tabs don't keep data. Keep the JSON files: they can be imported again.</li>
     <li><b>Tap on the movement, not the doors.</b> Use the same rule on every trip, such as first wheel movement and full stop, so the numbers are comparable.</li>
