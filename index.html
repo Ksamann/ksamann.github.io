@@ -86,7 +86,7 @@ section{padding-block:72px 24px}
 .reveal.in{animation:fade .9s var(--ease) both}
 
 /* project grid: auto-fills; one card today, ready for more */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:20px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:20px}
 .proj{position:relative;display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--rule);border-radius:24px;overflow:hidden;text-decoration:none;transition:transform .35s var(--ease),border-color .35s,box-shadow .35s}
 .proj:hover{transform:translateY(-4px);border-color:var(--contour);box-shadow:0 24px 48px -28px rgba(0,0,0,.5)}
 .proj.feature{grid-column:1/-1}
@@ -101,6 +101,15 @@ section{padding-block:72px 24px}
 .phone .btn{border-radius:10px;background:#eef1f4;color:#0d1013;box-shadow:inset 0 0 0 3px #3aaa35;padding:14px 4px;text-align:center;font:800 13px/1 var(--f-body);letter-spacing:.12em}
 .phone .ln{height:6px;border-radius:3px;background:#1f242b}
 .phone .ln.g{background:#3aaa35;opacity:.5;width:70%}
+.shot.lb::before{background:radial-gradient(60% 80% at 30% 30%,rgba(234,91,11,.22),transparent 70%)}
+.phone.lb{transform:rotate(4deg) translateY(8%);padding:14px 10px}
+.proj:hover .phone.lb{transform:rotate(1deg) translateY(4%)}
+.lbrow{display:grid;grid-template-columns:1fr 22px 22px;align-items:center;height:17px;font:600 9px/1 var(--f-body);color:#8b95a0}
+.lbrow span{text-align:right;padding-right:5px;white-space:nowrap;overflow:hidden}
+.lbrow i{grid-column:2/4;height:5px;margin:0 3px;border-radius:3px;border:1.5px solid #ea5b0b}
+.lbtrk{position:absolute;top:52px;bottom:18px;width:2px;background:#ea5b0b}
+.lbtrain{position:absolute;width:18px;height:11px;border-radius:6px;background:#eef1f4;transform:translate(-50%,-50%);display:grid;place-items:center}
+.lbtrain::after{content:"";width:8px;height:5px;border-radius:2px;background:var(--d,#5fd16b)}
 .body{padding:22px 22px 24px;display:flex;flex-direction:column;gap:14px;flex:1}
 .body h3{font-family:var(--f-display);font-weight:700;font-size:30px;line-height:1.05;letter-spacing:-.02em;margin:0}
 .body p{margin:0;color:var(--muted);max-width:56ch}
@@ -174,7 +183,7 @@ footer a:hover{color:var(--fg)}
   <section class="wrap" id="prosjekter" aria-labelledby="h-proj">
     <div class="sh reveal"><div><span class="label">Utvalgte prosjekter</span><h2 id="h-proj">Prosjekter</h2></div></div>
     <div class="grid">
-      <a class="proj feature reveal" href="tbane.html">
+      <a class="proj reveal" href="tbane.html">
         <div class="shot" aria-hidden="true">
           <div class="phone">
             <div class="r"><span class="b">5</span>Towards Vestli</div>
@@ -189,6 +198,27 @@ footer a:hover{color:var(--fg)}
           <h3>T-bane tidslogger</h3>
           <p>Feltverktøy for tidsstudier på T-banen. Registrerer kjøretid og oppholdstid med ett trykk per stasjon, virker uten dekning og eksporterer til CSV og JSON.</p>
           <div class="tags"><span>Progressiv webapp</span><span>Offline</span><span>JavaScript</span><span>Eksport til Excel</span></div>
+          <div class="cta"><b>Åpne appen</b><span class="arrow"><svg viewBox="0 0 20 20" fill="none"><path d="M4 10h11M11 5l5 5-5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+        </div>
+      </a>
+      <a class="proj reveal" href="linjeblikk.html">
+        <div class="shot lb" aria-hidden="true">
+          <div class="phone lb">
+            <div class="r"><span class="b" style="background:#ea5b0b">2</span>Linje 2</div>
+            <span class="mono" style="font-size:8px;color:#5fd16b">● LIVE</span>
+            <div style="position:relative;display:flex;flex-direction:column">
+              <div class="lbrow"><span>Tøyen</span><i></i></div><div class="lbrow"><span>Ensjø</span><i></i></div><div class="lbrow"><span>Helsfyr</span><i></i></div><div class="lbrow"><span>Brynseng</span><i></i></div><div class="lbrow"><span>Hellerud</span><i></i></div><div class="lbrow"><span>Tveita</span><i></i></div><div class="lbrow"><span>Haugerud</span><i></i></div><div class="lbrow"><span>Trosterud</span><i></i></div>
+            </div>
+            <span class="lbtrk" style="right:30px"></span><span class="lbtrk" style="right:11px"></span>
+            <span class="lbtrain" id="lbt1" style="right:22px;top:88px;transform:translate(50%,-50%)"></span>
+            <span class="lbtrain" id="lbt2" style="right:3px;top:150px;transform:translate(50%,-50%);--d:#f0b43c"></span>
+          </div>
+        </div>
+        <div class="body">
+          <span class="label">Webapp · 2026</span>
+          <h3>Linjeblikk</h3>
+          <p>Se hvor T-banen er akkurat nå. Posisjonen til hvert tog beregnes fra sanntidsdata, med linjevisning, nettverkskart og forsinkelse på hvert tog.</p>
+          <div class="tags"><span>Sanntid</span><span>Entur API</span><span>Offline</span><span>JavaScript</span></div>
           <div class="cta"><b>Åpne appen</b><span class="arrow"><svg viewBox="0 0 20 20" fill="none"><path d="M4 10h11M11 5l5 5-5 5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
         </div>
       </a>
@@ -266,6 +296,10 @@ if(!reduce && "IntersectionObserver" in window){
   const io=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting && e.boundingClientRect.top>innerHeight*.5){ e.target.classList.add("in"); } if(e.isIntersecting) io.unobserve(e.target); }),{threshold:.01});
   document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
 }
+
+/* Linjeblikk card: two trains glide along their tracks */
+(()=>{ if(reduce) return; const a=document.getElementById("lbt1"), b=document.getElementById("lbt2"); if(!a||!b) return; const t0=performance.now();
+  (function f(now){ const k=((now-t0)/9000)%1; a.style.top=(70+k*120)+"px"; b.style.top=(190-k*120)+"px"; requestAnimationFrame(f); })(t0); })();
 
 /* phone timer in project card */
 (()=>{ const el=document.getElementById("pt"); if(reduce) return; const t0=performance.now()-42700;
