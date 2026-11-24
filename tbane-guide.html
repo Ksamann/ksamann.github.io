@@ -5,8 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0d1013">
 <title>Metro timing logger – User guide</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="manifest" href="tbane.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 :root{
   color-scheme: dark;
@@ -87,8 +88,9 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
   <h2 id="open"><span class="n">1</span>Opening the app</h2>
   <ul>
     <li>Open <a href="https://ksamann.github.io/tbane.html">ksamann.github.io/tbane.html</a> in your phone's browser.</li>
-    <li>To open it like an app, add it to your home screen: in Safari tap <b>Share → Add to Home Screen</b>; in Chrome tap <b>⋮ → Add to Home screen</b>.</li>
-    <li>The app is a single file. It also works when opened from SharePoint or saved on the phone, and it needs no connection while you log.</li>
+    <li>Install it as an app: in Safari tap <b>Share → Add to Home Screen</b>; in Chrome tap <b>⋮ → Install app</b> (or <b>Add to Home screen</b>). It then opens full screen from its own icon.</li>
+    <li><b>Works offline.</b> After the app has been opened once with a connection, it is stored on the phone and opens and reloads with no signal, for example in a tunnel. Updates are fetched in the background and take effect the next time you open it.</li>
+    <li>The page also works when opened from SharePoint or saved on the phone, but then only while the page stays open. Use the ksamann.github.io address to get offline support.</li>
     <li>Switch language with <span class="btn">NO</span> <span class="btn">EN</span> at the top. Station names always stay in Norwegian.</li>
   </ul>
 
@@ -111,7 +113,7 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
   <p>Tap <span class="btn">Start logging</span>. It stays disabled until a name is entered.</p>
 
   <h2 id="log"><span class="n">4</span>Logging</h2>
-  <p>The large button alternates between two states. Tap it at the exact moment the train moves or stops:</p>
+  <p>The large button alternates between two states. Tap it at the exact moment the train moves or stops. The time is recorded the instant your finger touches the screen, not when you lift it:</p>
   <ol>
     <li><span class="btn dep">DEPART</span>: tap when the train starts moving from a station.</li>
     <li><span class="btn arr">ARRIVE</span>: tap when the train has come to a stop at the next station.</li>
@@ -159,13 +161,15 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
   <ul>
     <li>Tap <span class="btn">History</span> on the setup screen to see all trips stored on the phone.</li>
     <li>Tap a trip to see its summary and export it again.</li>
+    <li>Trips that have not been shared or downloaded are marked <b>Not exported</b>, and a line under the list says how many there are.</li>
     <li><span class="btn">Share</span> sends one trip; <span class="btn">Delete</span> removes it after you confirm.</li>
     <li><span class="btn">Export all (CSV)</span> or <span class="btn">Export all (JSON)</span> exports every trip in one file.</li>
+    <li><span class="btn">Import (JSON)</span> reads JSON files exported from this app back in, from this phone or a colleague's. Use it to restore a backup on a new phone or to gather trips in one place. Trips that are already on the phone are skipped.</li>
   </ul>
 
   <h2 id="tips"><span class="n">8</span>Tips and troubleshooting</h2>
   <ul>
-    <li><b>Data lives only on this phone.</b> Export or share trips before clearing browser data or switching phones. Private/incognito tabs don't keep data.</li>
+    <li><b>Data lives only on this phone.</b> Export or share trips before clearing browser data or switching phones. Private/incognito tabs don't keep data. Keep the JSON files: they can be imported again.</li>
     <li><b>Tap on the movement, not the doors.</b> Use the same rule on every trip, such as first wheel movement and full stop, so the numbers are comparable.</li>
     <li><b>Screen turned off anyway?</b> Some phones ignore the keep-awake request in power-saving mode. Turn power saving off or increase the auto-lock time.</li>
     <li><b>Missed a tap?</b> Tap as soon as you can and add a <span class="btn">✎ Note</span> so the value can be corrected later.</li>

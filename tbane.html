@@ -6,9 +6,13 @@
 <meta name="theme-color" content="#0d1013">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="T-bane logger">
 <title>Metro timing logger</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="manifest" href="tbane.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Layout: one phone-width column. Logging = sticky control panel (status, timer, big toggle) over a newest-first timeline. Dark-only by design. */
 :root{
@@ -116,7 +120,7 @@ input,textarea{width:100%;min-height:52px;border-radius:12px;background:var(--su
 .timer{font-family:var(--f-mono);font-weight:700;font-size:58px;line-height:.95;letter-spacing:-.04em}
 .timer .ds{font-size:.55em;color:var(--muted);letter-spacing:0}
 .now .what{font-size:13px;color:var(--muted);text-align:right;line-height:1.25;padding-bottom:4px}
-.big{min-height:136px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:var(--f-display);transition:transform .06s;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.big{min-height:136px;border-radius:20px;touch-action:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-family:var(--f-display);transition:transform .06s;user-select:none;-webkit-user-select:none}
 .big:active{transform:scale(.985)}
 .big .verb{font-weight:800;font-size:44px;letter-spacing:.07em;line-height:1;text-transform:uppercase}
 .big .sub{font-weight:600;font-size:19px;opacity:.85;max-width:100%;padding:0 12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -241,6 +245,10 @@ const I18N = {
     del:"Slett", delQ:"Slette denne turen for godt?", delDone:"Turen er slettet",
     exportAllCsv:"Eksporter alle (CSV)", exportAllJson:"Eksporter alle (JSON)",
     histHint:"Turene lagres bare på denne telefonen. Eksporter dem før du sletter nettleserdata.",
+    importJson:"Importer (JSON)", importBad:"Filen kunne ikke leses. Velg en JSON-fil eksportert fra denne appen.",
+    imported:(a,d,b)=>`Importerte ${a} ${a===1?"tur":"turer"}`+(d?`, ${d} fantes fra før`:"")+(b?`, ${b} ugyldige`:""),
+    storageFull:"Lagringen er full. Eksporter og slett noen turer.",
+    notExported:"Ikke eksportert", unexported:n=>`${n} ${n===1?"tur er":"turer er"} ikke eksportert ennå.`,
     back:"Tilbake", resumed:"Turen er gjenopptatt", storageOff:"Lagring er ikke tilgjengelig i denne nettleseren. Eksporter turen før du lukker siden.",
     csv:{trip_id:"tur_id",date:"dato",line:"linje",direction:"retning",seq:"sekvens",station:"stasjon",arrival:"ankomst",departure:"avgang",dwell_s:"opphold_s",to_station:"til_stasjon",run_s:"kjoretid_s",station_note:"stasjonsnotat",observer:"registrator",train:"tog",trip_note:"turnotat"},
     locale:"nb-NO", sep:";", dec:","
@@ -274,6 +282,10 @@ const I18N = {
     del:"Delete", delQ:"Delete this trip permanently?", delDone:"Trip deleted",
     exportAllCsv:"Export all (CSV)", exportAllJson:"Export all (JSON)",
     histHint:"Trips are stored only on this phone. Export them before clearing browser data.",
+    importJson:"Import (JSON)", importBad:"The file couldn't be read. Pick a JSON file exported from this app.",
+    imported:(a,d,b)=>`Imported ${a} ${a===1?"trip":"trips"}`+(d?`, ${d} already here`:"")+(b?`, ${b} invalid`:""),
+    storageFull:"Storage is full. Export and delete some trips.",
+    notExported:"Not exported", unexported:n=>`${n} ${n===1?"trip hasn't":"trips haven't"} been exported yet.`,
     back:"Back", resumed:"Trip resumed", storageOff:"Storage isn't available in this browser. Export the trip before closing the page.",
     csv:{trip_id:"trip_id",date:"date",line:"line",direction:"direction",seq:"seq",station:"station",arrival:"arrival",departure:"departure",dwell_s:"dwell_s",to_station:"to_station",run_s:"run_s",station_note:"station_note",observer:"observer",train:"train",trip_note:"trip_note"},
     locale:"en-GB", sep:",", dec:"."
@@ -286,7 +298,9 @@ const I18N = {
 const K = {lang:"tbane.lang", active:"tbane.active", trips:"tbane.trips", lines:"tbane.lines", observer:"tbane.observer"};
 let storageOk = true;
 function load(key, def){ try{ const v=localStorage.getItem(key); return v==null?def:JSON.parse(v); }catch(e){ storageOk=false; return def; } }
-function save(key, val){ try{ if(val==null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val)); }catch(e){ storageOk=false; } }
+function save(key, val){ try{ if(val==null) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify(val)); return true; }catch(e){ storageOk=false; return false; } }
+// Ask the browser not to evict our data under storage pressure (granted silently for installed apps on most phones).
+function askPersist(){ try{ const st=navigator.storage; if(st && st.persist) st.persisted().then(p=>p||st.persist()).catch(()=>{}); }catch(e){} }
 
 let lang = load(K.lang, "en");
 if(!I18N[lang]) lang="en";
@@ -359,6 +373,7 @@ function totals(trip){
 }
 const persistActive = () => save(K.active, S.active);
 const persistTrips = () => save(K.trips, S.trips);
+function markExported(trips){ const now=Date.now(); trips.forEach(x=>x.exportedAt=now); persistTrips(); }
 
 /* ---------- export ---------- */
 function slug(s){ return String(s).replace(/[\\/:*?"<>|]+/g,"").replace(/\s+/g,""); }
@@ -381,7 +396,8 @@ function toCSV(trips){
 function tripJSON(trip){
   const tt=totals(trip);
   return {
-    id:trip.id, line:trip.line, direction:trip.towards, start_station:trip.stations[trip.startIdx], planned_end_station:trip.stations[trip.endIdx],
+    id:trip.id, line:trip.line, direction:trip.towards, direction_index:trip.dirIndex||0,
+    start_station:trip.stations[trip.startIdx], start_index:trip.startIdx, planned_end_station:trip.stations[trip.endIdx], planned_end_index:trip.endIdx,
     observer:trip.observer, train:trip.train, note:trip.note,
     started_at:isoLocal(trip.startedAt), ended_at:trip.endedAt?isoLocal(trip.endedAt):null, ended_by:trip.endedBy||null,
     totals:{total_s:+(tt.total/1000).toFixed(3), run_s:+(tt.run/1000).toFixed(3), dwell_s:+(tt.dwell/1000).toFixed(3), legs:tt.legs},
@@ -409,12 +425,54 @@ async function share(trips, name){
   try{
     if(navigator.canShare && navigator.canShare({files})){
       await navigator.share({files, title:name, text:name});
-      return;
+      markExported(trips); return;
     }
   }catch(e){ if(e && e.name==="AbortError") return; }
-  download(f.csv); setTimeout(()=>download(f.json), 400); toast(T().shareFallback);
+  download(f.csv); setTimeout(()=>download(f.json), 400); markExported(trips); toast(T().shareFallback);
 }
-function exportOne(trips, name, kind){ const f=makeFiles(trips,name)[kind]; download(f); toast(T().downloaded(f.name)); }
+function exportOne(trips, name, kind){ const f=makeFiles(trips,name)[kind]; download(f); markExported(trips); toast(T().downloaded(f.name)); }
+
+/* ---------- import ---------- */
+// Rebuilds a trip from the app's own JSON export. Returns null for anything that doesn't fit.
+function tripFromJSON(o){
+  if(!o || typeof o!=="object" || !o.id || !Array.isArray(o.route) || o.route.length<2) return null;
+  const line=String(o.line); if(!DEFAULT_LINES[line]) return null;
+  const route=o.route.map(String), ok=i=>Number.isInteger(i)&&i>=0&&i<route.length;
+  const events=(Array.isArray(o.events)?o.events:[]).map(e=>({
+    type: e&&e.type==="departure"?"dep" : e&&e.type==="arrival"?"arr" : null,
+    idx: e?Number(e.station_index):NaN, t: e?Number(e.epoch_ms):NaN, station:"", ts:""
+  }));
+  if(events.some(e=>!e.type||!ok(e.idx)||!Number.isFinite(e.t))) return null;
+  events.forEach((e,i)=>{ e.station=route[e.idx]; e.ts=String(o.events[i].timestamp||isoLocal(e.t)); });
+  let startIdx = ok(o.start_index) ? o.start_index : events.length ? events[0].idx : route.indexOf(String(o.start_station));
+  if(!ok(startIdx) || startIdx>=route.length-1) startIdx=0;
+  let endIdx = ok(o.planned_end_index) ? o.planned_end_index : route.indexOf(String(o.planned_end_station), startIdx+1);
+  if(!ok(endIdx) || endIdx<=startIdx) endIdx=route.length-1;
+  const startedAt = Date.parse(o.started_at) || (events[0]&&events[0].t); if(!Number.isFinite(startedAt)) return null;
+  const notes={}; (Array.isArray(o.segments)?o.segments:[]).forEach(x=>{ if(x && x.note && ok(x.station_index)) notes[x.station_index]=String(x.note); });
+  const lastT = events.length ? events[events.length-1].t : startedAt;
+  const str = v => v==null ? "" : String(v);
+  return { id:String(o.id), line, dirIndex: o.direction_index===1 ? 1 : o.direction_index===0 ? 0 : (route[route.length-1]===DEFAULT_LINES[line].stations[0] ? 1 : 0),
+    towards: str(o.direction)||route[route.length-1], stations:route, startIdx, endIdx,
+    observer:str(o.observer), train:str(o.train), note:str(o.note), startedAt,
+    endedAt: Date.parse(o.ended_at) || lastT, endedBy: str(o.ended_by)||"manual", events, notes, exportedAt: Date.now() };
+}
+async function importFiles(files){
+  const t=T(); let added=0, dup=0, bad=0, unreadable=0;
+  for(const file of files){
+    let data=null; try{ data=JSON.parse(await file.text()); }catch(e){}
+    const list = data && data.app==="tbane-tidslogger" ? (data.trip ? [data.trip] : Array.isArray(data.trips) ? data.trips : null) : null;
+    if(!list){ unreadable++; continue; }
+    for(const o of list){
+      const tr=tripFromJSON(o); if(!tr){ bad++; continue; }
+      if(S.trips.some(x=>x.id===tr.id) || (S.active && S.active.id===tr.id)){ dup++; continue; }
+      S.trips.push(tr); added++;
+    }
+  }
+  if(!added && !dup && !bad) return toast(t.importBad);
+  S.trips.sort((a,b)=>b.startedAt-a.startedAt);
+  const saved=persistTrips(); draw(); toast(saved ? t.imported(added,dup,bad+unreadable) : t.storageFull);
+}
 
 /* ---------- wake lock ---------- */
 let wakeLock=null;
@@ -555,11 +613,11 @@ function startTrip(){
     observer:S.observer.trim(), train:S.train.trim(), note:S.note.trim(),
     startedAt:Date.now(), endedAt:null, endedBy:null, events:[], notes:{}
   };
-  persistActive(); go("log");
+  persistActive(); askPersist(); go("log");
 }
 
 /* ---------- logging ---------- */
-let lastPress=0;
+let lastPress=0, lastPointer=0;
 function drawLog(){
   const t=T(), trip=S.active; if(!trip){ S.screen="setup"; return draw(); }
   const r=trip.stations, st=tripState(trip), list=stops(trip);
@@ -587,7 +645,10 @@ function drawLog(){
     </div>
     <div class="log">${timeline(trip, list, st)}</div>
   </section>`;
-  $("#press").onclick=press;
+  const pb=$("#press");
+  // Timestamp on finger-down, not on release (click fires 50–150 ms later, by a varying amount).
+  pb.onpointerdown=e=>{ if(!e.isPrimary || e.button!==0) return; e.preventDefault(); lastPointer=Date.now(); press(e); };
+  pb.onclick=e=>{ if(e.detail>0 && Date.now()-lastPointer<3000) return; press(null); };   // keyboard, switch control, screen readers
   $("#undo").onclick=()=>{ trip.events.pop(); persistActive(); toast(t.undone); draw(); };
   $("#note").onclick=()=>{ S.noteOpen=!S.noteOpen; draw(); if(S.noteOpen) $("#nt").focus(); };
   if(S.noteOpen){
@@ -616,9 +677,12 @@ function timeline(trip, list, st){
   return `<div class="log-head"><span></span><span class="label">${t.colStation}</span><span class="label">${t.colArr}</span><span class="label">${t.colDwell}</span></div>
     <ol class="tl">${items.reverse().join("")}</ol>`;
 }
-function press(){
-  const now=Date.now(); if(now-lastPress<400) return; lastPress=now;   // guard against accidental double tap
-  const trip=S.active, st=tripState(trip), ev={type:st.mode, idx:st.idx, station:trip.stations[st.idx], t:now, ts:isoLocal(now), perf:Math.round(performance.now())};
+function press(e){
+  const wall=Date.now(); if(wall-lastPress<400) return; lastPress=wall;   // guard against accidental double tap
+  // Back-date to the moment the event happened, removing handler latency (capped at 1 s).
+  const lag = e && e.timeStamp>0 ? Math.min(1000, Math.max(0, performance.now()-e.timeStamp)) : 0;
+  const now=Math.round(wall-lag);
+  const trip=S.active, st=tripState(trip), ev={type:st.mode, idx:st.idx, station:trip.stations[st.idx], t:now, ts:isoLocal(now), perf:Math.round(performance.now()-lag)};
   trip.events.push(ev); persistActive(); buzz(); S.noteOpen=false;
   if(st.mode==="arr" && st.idx===trip.endIdx){ toast(T().arrivedEnd(trip.stations[st.idx])); return finishTrip("auto"); }
   draw();
@@ -672,12 +736,13 @@ function drawDone(){
 
 /* ---------- history ---------- */
 function drawHist(){
-  const t=T();
+  const t=T(), unexp=S.trips.filter(x=>!x.exportedAt).length;
   app.innerHTML = `<section class="screen">
     <div class="bar"><button class="iconbtn" ${S.active?'data-go="log"':'data-go="setup"'} aria-label="${t.back}">←</button><h1>${t.history}</h1>${langToggle()}${helpLink()}</div>
     ${S.trips.length?`<ul class="hist">${S.trips.map(trip=>{
       const tt=totals(trip), L=DEFAULT_LINES[trip.line]||DEFAULT_LINES["1"];
-      const sub=[dateStr(trip.startedAt)+" "+clock(trip.startedAt).slice(0,5), trip.observer, t.segs(tt.legs)].filter(Boolean).map(esc).join(" · ");
+      const sub=[dateStr(trip.startedAt)+" "+clock(trip.startedAt).slice(0,5), trip.observer, t.segs(tt.legs)].filter(Boolean).map(esc).join(" · ")
+        + (trip.exportedAt ? "" : ` · <span class="warn">${t.notExported}</span>`);
       return `<li><div class="row">
         <button class="open" data-open="${esc(trip.id)}"><div class="badge" style="--line:${L.color};--ink:${L.ink}">${esc(trip.line)}</div><div><div class="t">${esc(trip.stations[trip.startIdx])} → ${esc(tt.endName)}</div><div class="s">${sub}</div></div></button>
         <div class="acts"><button data-share="${esc(trip.id)}">${t.share.split(" ")[0]}</button><button data-del="${esc(trip.id)}">${t.del}</button></div></div>
@@ -685,6 +750,8 @@ function drawHist(){
       </li>`;}).join("")}</ul>
     <div class="btnrow"><button class="btn" id="allcsv">${t.exportAllCsv}</button><button class="btn" id="alljson">${t.exportAllJson}</button></div>`
     :`<p class="hint empty">${t.noTrips}</p>`}
+    <div class="btnrow"><button class="btn" id="imp">${t.importJson}</button><input type="file" id="impf" accept=".json,application/json" multiple hidden></div>
+    ${unexp?`<p class="hint warn">${t.unexported(unexp)}</p>`:""}
     <p class="hint">${t.histHint}</p>
   </section>`;
   bindCommon();
@@ -697,9 +764,16 @@ function drawHist(){
   const d=new Date(), stamp=`${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
   const ac=$("#allcsv"); if(ac) ac.onclick=()=>exportOne(S.trips, `tbane_alle_${stamp}`, "csv");
   const aj=$("#alljson"); if(aj) aj.onclick=()=>exportOne(S.trips, `tbane_alle_${stamp}`, "json");
+  const fi=$("#impf"); $("#imp").onclick=()=>fi.click();
+  fi.onchange=()=>{ const files=[...fi.files]; fi.value=""; if(files.length) importFiles(files); };
 }
 
 draw();
+askPersist();
+// Offline support: cache the app so it opens with no signal. Only over https (not file:// or SharePoint previews).
+if("serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost" || location.hostname==="127.0.0.1")){
+  navigator.serviceWorker.register("tbane-sw.js", {scope:"./tbane"}).catch(()=>{});
+}
 </script>
 </body>
 </html>
