@@ -1,0 +1,51 @@
+{
+  "$comment": "Schema for trips sent with 'Submit to team' from tbane.html (version 2). Paste into the Power Automate 'Parse JSON' action. See tbane-admin-guide.md.",
+  "type": "object",
+  "required": ["app", "kind", "version", "trip_id", "line", "started_at", "segments"],
+  "properties": {
+    "app":                 { "type": "string" },
+    "kind":                { "type": "string" },
+    "version":             { "type": "integer" },
+    "app_version":         { "type": "string" },
+    "device_id":           { "type": "string" },
+    "trip_id":             { "type": "string" },
+    "line":                { "type": "string" },
+    "direction":           { "type": "string" },
+    "start_station":       { "type": "string" },
+    "end_station":         { "type": "string" },
+    "planned_end_station": { "type": "string" },
+    "started_at":          { "type": "string" },
+    "ended_at":            { "type": ["string", "null"] },
+    "ended_by":            { "type": "string" },
+    "observer":            { "type": "string" },
+    "nickname":            { "type": "string" },
+    "leaderboard":         { "type": "boolean" },
+    "train":               { "type": "string" },
+    "note":                { "type": "string" },
+    "legs":                { "type": "integer" },
+    "total_s":             { "type": ["number", "null"] },
+    "run_s":               { "type": ["number", "null"] },
+    "dwell_s":             { "type": ["number", "null"] },
+    "undo_count":          { "type": "integer" },
+    "quality":             { "type": "string" },
+    "flags":               { "type": "string" },
+    "points":              { "type": "integer" },
+    "segments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["seq", "station"],
+        "properties": {
+          "seq":     { "type": "integer" },
+          "station": { "type": "string" },
+          "arr":     { "type": ["string", "null"] },
+          "dep":     { "type": ["string", "null"] },
+          "dwell_s": { "type": ["number", "null"] },
+          "to":      { "type": ["string", "null"] },
+          "run_s":   { "type": ["number", "null"] },
+          "note":    { "type": "string" }
+        }
+      }
+    }
+  }
+}
