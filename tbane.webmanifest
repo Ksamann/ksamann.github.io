@@ -1,0 +1,17 @@
+{
+  "name": "Metro timing logger",
+  "short_name": "T-bane logger",
+  "description": "Log running and dwell times on Oslo T-bane, offline.",
+  "id": "tbane.html",
+  "start_url": "tbane.html",
+  "scope": "tbane",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0d1013",
+  "theme_color": "#0d1013",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
