@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0f13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Linjeblikk">
+<meta name="description" content="Se hvor T-banen i Oslo er akkurat nå, beregnet fra sanntidsdata.">
+<title>Linjeblikk</title>
+<link rel="manifest" href="linjeblikk.webmanifest">
+<link rel="icon" href="icons/linjeblikk.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/linjeblikk-180.png">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* Layout: one phone-width column. App bar + line picker on top, scrolling content, tab bar at the bottom. Dark only: an operations screen for the pocket. */
+:root{
+  color-scheme:dark;
+  --bg:#0c0f13; --surface:#151a20; --surface-2:#1d232b; --rule:#262e38;
+  --fg:#eef1f4; --muted:#8b95a0; --dim:#4d5661;
+  --ok:#5fd16b; --late:#f0b43c; --bad:#ff5d4f;
+  --c:#3aaa35;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:16px;line-height:1.4;-webkit-text-size-adjust:100%;overscroll-behavior:none}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}
+:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.app{height:100%;max-width:520px;margin:0 auto;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top,0px)}
+.appbar{display:flex;align-items:center;gap:10px;padding:10px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px))}
+.appbar h1{font-family:var(--f-display);font-weight:700;font-size:26px;margin:0;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.live{display:inline-flex;align-items:center;gap:6px;font:700 11px var(--f-mono);letter-spacing:.06em;color:var(--ok);white-space:nowrap}
+.live::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;animation:blink 1.6s infinite}
+.live.stale{color:var(--late)}
+.live.off{color:var(--bad)}
+.live.off::before,.live.stale::before{animation:none}
+@keyframes blink{50%{opacity:.25}}
+.content{flex:1;min-height:0;overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
+.tabs{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--rule);background:var(--bg);padding:6px 4px calc(8px + env(safe-area-inset-bottom,0px))}
+.tabs button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--dim);padding:6px 0}
+.tabs button svg{width:24px;height:24px}
+.tabs button[aria-selected="true"]{color:var(--fg)}
+.badge{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-family:var(--f-display);font-weight:800;font-size:18px;color:#071018;background:var(--c)}
+.msg{margin:24px 16px;padding:16px;border-radius:16px;background:var(--surface);color:var(--muted);font-size:15px}
+.msg b{color:var(--fg);display:block;margin-bottom:4px}
+.banner{margin:0 16px 8px;padding:8px 12px;border-radius:12px;font-size:13px;background:color-mix(in srgb,var(--late) 14%,var(--surface));color:var(--fg)}
+
+/* ---------- line view ---------- */
+.linepick{display:flex;gap:10px;padding:0 16px 10px}
+.linepick button{width:42px;height:42px;border-radius:50%;border:3px solid var(--lc);color:var(--fg);font:800 19px var(--f-display)}
+.linepick button[aria-pressed="true"]{background:var(--lc);color:#071018}
+.dirhead{display:grid;grid-template-columns:1fr 78px 78px;gap:0;padding:0 12px 8px;font-size:10.5px;font-weight:700;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--rule);line-height:1.2}
+.dirhead span{min-width:0;text-align:center;overflow-wrap:anywhere}
+.dirhead span:first-child{text-align:right;padding-right:12px}
+.strip{position:relative;margin:6px 12px 140px}
+.strip .trk{position:absolute;top:22px;bottom:22px;width:4px;margin-left:-2px;background:var(--c);border-radius:2px;opacity:.85}
+.strip .st{height:44px;display:grid;grid-template-columns:1fr 156px;align-items:center}
+.strip .st span{grid-row:1;grid-column:1;font-family:var(--f-display);font-weight:600;font-size:16px;text-align:right;padding-right:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+.strip .st i{grid-row:1;grid-column:2;height:12px;margin:0 22px;border-radius:6px;background:var(--bg);border:2.5px solid var(--c);position:relative;z-index:1}
+.strip .st.term span{color:var(--fg);font-weight:700}
+.train{position:absolute;height:26px;min-width:44px;display:flex;align-items:center;justify-content:center;gap:4px;padding:0 7px;border-radius:13px;background:var(--fg);color:var(--bg);font:700 11px var(--f-mono);z-index:2;transform:translate(-50%,-50%)}
+.train b{font:700 10px var(--f-mono);padding:2px 5px;border-radius:5px;background:var(--ok);color:#071018}
+.train b.late{background:var(--late)}
+.train b.bad{background:var(--bad)}
+.train.sel{box-shadow:0 0 0 3px var(--c),0 0 0 6px var(--bg)}
+.train.wait{opacity:.6}
+.sheet{position:fixed;left:50%;transform:translateX(-50%);width:min(504px,calc(100% - 16px));bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--surface);border:1px solid var(--rule);border-radius:22px;padding:14px 16px 16px;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:5;display:flex;flex-direction:column;gap:10px}
+.sheet .h{display:flex;align-items:center;gap:10px}
+.sheet .h div{flex:1;min-width:0}
+.sheet .h b{display:block;font-family:var(--f-display);font-weight:700;font-size:21px;line-height:1.1}
+.sheet .h small{color:var(--muted);font-size:13px}
+.sheet ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.sheet li{display:grid;grid-template-columns:1fr auto auto;gap:12px;font-size:15px;padding:3px 0;align-items:baseline}
+.sheet li .mono{font:500 14px var(--f-mono)}
+.sheet li s{color:var(--dim);font:500 12px var(--f-mono)}
+.x{width:36px;height:36px;border-radius:50%;background:var(--surface-2);font-size:15px}
+
+/* ---------- network ---------- */
+.net{padding:4px 8px 0}
+.net svg{display:block;width:100%;height:auto;margin:0 auto}
+.net text{font-family:var(--f-display);font-weight:600;font-size:10.5px;fill:var(--muted)}
+.net text.major{fill:var(--fg);font-weight:700}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:10px 16px 20px}
+.kpi{background:var(--surface);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi small{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.kpi b{font:700 20px var(--f-mono)}
+.foot{padding:0 16px 24px;font-size:12px;color:var(--dim)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="appbar"><h1 id="title">Linjeblikk</h1><span class="live" id="live">KOBLER TIL</span></header>
+  <div id="linebar">
+    <div class="linepick" id="pick" role="group" aria-label="Velg linje"></div>
+    <div class="dirhead"><span>Stasjon</span><span id="dR"></span><span id="dL"></span></div>
+  </div>
+  <main class="content" id="content"></main>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="line" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><circle cx="12" cy="7" r="2.5" fill="currentColor"/><circle cx="12" cy="17" r="2.5"/></svg>Linje</button>
+    <button role="tab" data-tab="net" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M8 12V4M16 12v8"/><circle cx="8" cy="12" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/></svg>Nettverk</button>
+  </nav>
+</div>
+<div class="sheet" id="sheet" hidden></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Linjeblikk — where the Oslo metro is right now.
+   Data: Entur Journey Planner v3 (open API, CORS enabled). There are no
+   GPS positions for the metro, so each train's position is interpolated
+   between the last station it left and the next one, using actual and
+   expected times.
+   ===================================================================== */
+const API = "https://api.entur.io/journey-planner/v3/graphql";
+const CLIENT = "ksamann-linjeblikk";
+const POLL_MS = 20000, NET_TTL = 12*3600e3;
+const COLORS = {"1":"#009cdc","2":"#ea5b0b","3":"#a683a5","4":"#3d6fd1","5":"#3aaa35"};
+// orientation of each line in the UI (top of the strip = this terminus)
+const TERMINI = {"1":["Frognerseteren","Bergkrystallen"],"2":["Østerås","Ellingsrudåsen"],"3":["Kolsås","Mortensrud"],"4":["Vestli","Bergkrystallen"],"5":["Sognsvann","Vestli"]};
+
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(2,"0");
+const hm = t => { const d=new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function store(k,v){ try{ if(v===undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k,JSON.stringify(v)); }catch(e){ return null; } }
+
+async function gql(query){
+  const r = await fetch(API,{method:"POST",headers:{"Content-Type":"application/json","ET-Client-Name":CLIENT},body:JSON.stringify({query})});
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  const j = await r.json(); if(j.errors) throw new Error(j.errors[0].message);
+  return j.data;
+}
+
+/* ---------- network: lines and their station order ---------- */
+let NET = null;   // { lines: {code:{stations:[{id,name}]}}, stopIds:[...] }
+async function loadNetwork(){
+  const c = store("lb.net");
+  if(c && Date.now()-c.at < NET_TTL && c.v===2){ NET=c.net; return; }
+  const d = await gql(`{ lines(transportModes:[metro], authorities:["RUT:Authority:RUT"]) { publicCode journeyPatterns { quays { stopPlace { id name } } } } }`);
+  const lines={}, ids=new Set();
+  for(const l of d.lines){
+    if(!COLORS[l.publicCode]) continue;
+    // main route: the longest pattern between the line's official termini (others are short turns or diversions)
+    const [A,B]=TERMINI[l.publicCode]; let best=[], fallback=[];
+    for(const jp of l.journeyPatterns){
+      let s=jp.quays.map(q=>({id:q.stopPlace.id,name:q.stopPlace.name})); s.forEach(x=>ids.add(x.id));
+      if(s.length>fallback.length) fallback=s;
+      if(s[0].name===B && s[s.length-1].name===A) s=s.slice().reverse();
+      if(s[0].name===A && s[s.length-1].name===B && s.length>best.length) best=s;
+    }
+    if(!best.length) best=fallback;
+    lines[l.publicCode]={stations:best};
+  }
+  NET={lines, stopIds:[...ids]};
+  store("lb.net",{at:Date.now(),v:2,net:NET});
+}
+
+/* ---------- realtime calls ---------- */
+let JOURNEYS = [], lastOk = 0, lastErr = null;
+async function loadCalls(){
+  const start = new Date(Date.now()-8*60e3).toISOString();
+  const d = await gql(`{ stopPlaces(ids:${JSON.stringify(NET.stopIds)}) { id estimatedCalls(startTime:"${start}", timeRange:1500, numberOfDepartures:50, whiteListedModes:[metro], includeCancelledTrips:true) {
+    stopPositionInPattern aimedArrivalTime expectedArrivalTime actualArrivalTime aimedDepartureTime expectedDepartureTime actualDepartureTime cancellation
+    destinationDisplay{frontText} serviceJourney{ id line{publicCode} } } } }`);
+  const by = new Map(), T = s => s ? Date.parse(s) : null;
+  for(const sp of d.stopPlaces) for(const c of sp.estimatedCalls){
+    const id=c.serviceJourney.id;
+    if(!by.has(id)) by.set(id,{id, line:c.serviceJourney.line.publicCode, dest:c.destinationDisplay&&c.destinationDisplay.frontText, calls:[]});
+    by.get(id).calls.push({stop:sp.id, p:c.stopPositionInPattern, cancel:c.cancellation,
+      aArr:T(c.aimedArrivalTime), arr:T(c.actualArrivalTime)||T(c.expectedArrivalTime), aDep:T(c.aimedDepartureTime), dep:T(c.actualDepartureTime)||T(c.expectedDepartureTime),
+      actualDep:!!c.actualDepartureTime});
+  }
+  const out=[];
+  for(const j of by.values()){
+    const L = NET.lines[j.line]; if(!L) continue;
+    j.calls.sort((a,b)=>a.p-b.p);
+    const m = mapToLine(j.calls, L.stations); if(!m) continue;
+    j.dir=m.dir; j.calls.forEach((c,i)=>c.ix=m.ix[i]);
+    out.push(j);
+  }
+  JOURNEYS = out;
+}
+// Map a journey's calls (sorted by pattern position) onto the line's station list.
+// Tries both directions and every offset; prefers the alignment where pattern position == index (full-length journeys).
+function mapToLine(calls, st){
+  const n=st.length; let best=null;
+  for(const dir of [0,1]){
+    const idAt = i => (dir===0 ? st[i] : st[n-1-i]).id;
+    for(let o=-calls[0].p; o<n; o++){
+      let ok=true;
+      for(const c of calls){ const i=c.p+o; if(i<0||i>=n||idAt(i)!==c.stop){ ok=false; break; } }
+      if(ok){ const score=Math.abs(o); if(!best||score<best.score) best={dir,o,score}; }
+    }
+  }
+  if(!best) return null;
+  return {dir:best.dir, ix:calls.map(c=>{ const i=c.p+best.o; return best.dir===0 ? i : n-1-i; })};
+}
+// Position of a journey at time t: {pos (fractional index in line order), at (bool), next (call index), delay s} or null.
+function stateAt(j,t){
+  const cs=j.calls.filter(c=>!c.cancel); if(cs.length<2) return null;
+  let i=-1; for(let k=0;k<cs.length;k++){ if(cs[k].dep!=null && cs[k].dep<=t) i=k; else break; }
+  if(i===-1){ // not yet departed from first call in window
+    const f=cs[0];
+    if(f.arr!=null && f.arr<=t) return {pos:f.ix, at:true, next:0, delay:delayOf(f)};
+    if(f.p===0 && f.dep!=null && f.dep-t < 4*60e3) return {pos:f.ix, at:true, wait:true, next:0, delay:delayOf(f)};
+    return null;
+  }
+  if(i===cs.length-1) return null;            // left the last station we know of
+  const a=cs[i], b=cs[i+1];
+  if(b.arr!=null && b.arr<=t) return {pos:b.ix, at:true, next:i+1, delay:delayOf(b)};
+  const span=Math.max(1,(b.arr||b.dep)-a.dep), f=Math.min(1,Math.max(0,(t-a.dep)/span));
+  return {pos:a.ix+(b.ix-a.ix)*f, at:false, next:i+1, delay:delayOf(b)};
+}
+function delayOf(c){ const e=c.arr||c.dep, a=c.aArr||c.aDep; return (e&&a) ? Math.round((e-a)/1000) : 0; }
+const dCls = d => d<60?"":d<180?"late":"bad";
+const dTxt = d => d<60 ? "0" : (d>0?"+":"")+Math.round(d/60);
+
+/* =====================================================================
+   UI
+   ===================================================================== */
+const S = { tab: store("lb.tab")||"line", line: store("lb.line")||"5", sel:null };
+if(!COLORS[S.line]) S.line="5";
+const content=$("#content"), sheet=$("#sheet");
+
+function setLive(){
+  const el=$("#live"), age=Date.now()-lastOk;
+  if(!lastOk){ el.className="live"+(lastErr?" off":""); el.textContent=lastErr?"INGEN DATA":"KOBLER TIL"; return; }
+  if(age<POLL_MS*2.5){ el.className="live"; el.textContent="LIVE"; }
+  else if(age<5*60e3){ el.className="live stale"; el.textContent=`${Math.round(age/60e3)||1} MIN GAMMEL`; }
+  else { el.className="live off"; el.textContent="FRAKOBLET"; }
+}
+
+function renderTabs(){
+  document.querySelectorAll("[data-tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===S.tab));
+  $("#linebar").hidden = S.tab!=="line";
+  $("#title").textContent = S.tab==="line" ? `Linje ${S.line}` : "Nettverket";
+  document.documentElement.style.setProperty("--c",COLORS[S.line]);
+  if(S.tab!=="line") closeSheet();
+  build();
+}
+
+/* ---------- line strip ---------- */
+const ROW=44;
+function buildLine(){
+  const L=NET.lines[S.line], st=L.stations, n=st.length;
+  $("#pick").innerHTML=Object.keys(COLORS).filter(k=>NET.lines[k]).map(k=>`<button style="--lc:${COLORS[k]}" data-l="${k}" aria-pressed="${k===S.line}">${k}</button>`).join("");
+  $("#dR").textContent="▼ "+st[n-1].name; $("#dL").textContent="▲ "+st[0].name;
+  content.innerHTML=`<div class="strip" id="strip" style="height:${n*ROW}px"><div class="trk" style="left:calc(100% - 117px)"></div><div class="trk" style="left:calc(100% - 39px)"></div>${st.map((s,i)=>`<div class="st ${i===0||i===n-1?"term":""}"><span>${esc(s.name)}</span><i></i></div>`).join("")}<div id="trains"></div></div>`;
+}
+function drawLine(t){
+  const box=$("#trains"); if(!box) return;
+  let html="";
+  for(const j of JOURNEYS){ if(j.line!==S.line) continue;
+    const s=stateAt(j,t); if(!s) continue;
+    const y=s.pos*ROW+ROW/2;
+    html+=`<button class="train ${s.wait?"wait":""} ${S.sel===j.id?"sel":""}" style="top:${y.toFixed(1)}px;left:calc(100% - ${j.dir===0?117:39}px)" data-j="${esc(j.id)}" aria-label="Tog mot ${esc(j.dest||"")}, ${s.delay<60?"i rute":Math.round(s.delay/60)+" min forsinket"}"><span>${j.dir===0?"▼":"▲"}</span><b class="${dCls(s.delay)}">${dTxt(s.delay)}</b></button>`;
+  }
+  box.innerHTML=html;
+}
+content.addEventListener("pointerdown",e=>{ const b=e.target.closest(".train"); if(!b) return; S.sel=b.dataset.j; tick(); });
+sheet.addEventListener("pointerdown",e=>{ if(e.target.closest(".x")) closeSheet(); });
+function closeSheet(){ S.sel=null; sheet.hidden=true; }
+function drawSheet(t){
+  if(!S.sel){ sheet.hidden=true; return; }
+  const j=JOURNEYS.find(x=>x.id===S.sel), s=j&&stateAt(j,t);
+  if(!s){ closeSheet(); return; }
+  const st=NET.lines[j.line].stations, cs=j.calls.filter(c=>!c.cancel);
+  const nxt=cs.slice(s.at?s.next+1:s.next).slice(0,4);
+  const head = s.at ? `Står på ${esc(st[Math.round(s.pos)].name)}` : `Mellom ${esc(st[cs[s.next-1].ix].name)} og ${esc(st[cs[s.next].ix].name)}`;
+  sheet.innerHTML=`<div class="h"><span class="badge" style="background:${COLORS[j.line]}">${j.line}</span><div><b>Mot ${esc(j.dest||st[j.dir===0?st.length-1:0].name)}</b><small>${head} · ${s.delay<60?"i rute":`${Math.round(s.delay/60)} min forsinket`}</small></div><button class="x" aria-label="Lukk">✕</button></div>
+    <ol>${nxt.map(c=>`<li><span>${esc(st[c.ix].name)}</span>${c.aArr&&Math.abs((c.arr||0)-c.aArr)>=60e3?`<s>${hm(c.aArr)}</s>`:"<s></s>"}<span class="mono num">${hm(c.arr||c.dep)}</span></li>`).join("")||`<li><span>Siste stasjon</span><s></s><span></span></li>`}</ol>`;
+  sheet.hidden=false;
+}
+
+/* ---------- network map ----------
+   Octilinear schematic on a 360×600 grid. Each line is a polyline through
+   key stations; stations in between are spread evenly along the path.
+   Lines that share track run side by side at a fixed lane offset. */
+const KEY = {
+  // west: three parallel branches, termini aligned at top (y=80) and bottom (y=540)
+  "Østerås":[30,80], "Makrellbekken":[30,300], "Smestad":[60,330], "Montebello":[30,360], "Kolsås":[30,540],
+  "Frognerseteren":[100,80], "Frøen":[100,300], "Sognsvann":[130,80],
+  // trunk and ring (a square from Majorstuen to Tøyen)
+  "Majorstuen":[130,330], "Tøyen":[270,330], "Ullevål stadion":[130,190], "Sinsen":[270,190], "Carl Berners plass":[270,290],
+  "Økern":[320,240], "Vestli":[320,80],
+  // east: branches fan out from Brynseng and Hellerud, termini aligned at the bottom
+  "Brynseng":[320,330], "Høyenhall":[300,350], "Bergkrystallen":[300,540],
+  "Hellerud":[350,330], "Mortensrud":[350,540], "Tveita":[380,360], "Ellingsrudåsen":[380,540]
+};
+const LANE = {"1":-2,"2":-1,"3":0,"4":1,"5":2}, LANEW=3.2;
+const TERMS = {top:["Østerås","Frognerseteren","Sognsvann","Vestli"], bottom:["Kolsås","Bergkrystallen","Mortensrud","Ellingsrudåsen"]};
+const LABELS = [ // name, dx, dy, anchor, major
+  ["Majorstuen",-8,24,"end",1],["Stortinget",0,24,"middle",1],["Tøyen",0,24,"middle",1],["Jernbanetorget",0,-16,"middle",0],["Helsfyr",0,-16,"middle",0],
+  ["Ullevål stadion",10,22,"start",0],["Sinsen",0,-12,"middle",0],["Storo",0,-12,"middle",0],["Økern",14,4,"start",0],["Carl Berners plass",-10,4,"end",0]
+];
+const INTERCHANGE = new Set(["Majorstuen","Nationaltheatret","Stortinget","Jernbanetorget","Grønland","Tøyen","Ensjø","Helsfyr","Brynseng","Smestad","Ullevål stadion","Sinsen","Økern","Carl Berners plass","Hellerud"]);
+let GEO=null;
+function offsetPolyline(pts,d){
+  if(!d) return pts.slice();
+  // normals point to the same side whichever way the line is drawn, so shared track keeps a fixed lane order
+  const nrm=(a,b)=>{ const dx=b[0]-a[0], dy=b[1]-a[1], l=Math.hypot(dx,dy)||1; let n=[-dy/l,dx/l]; if(n[0]<-1e-9 || (Math.abs(n[0])<1e-9 && n[1]<0)) n=[-n[0],-n[1]]; return n; };
+  return pts.map((p,i)=>{
+    const n1=i>0?nrm(pts[i-1],p):null, n2=i<pts.length-1?nrm(p,pts[i+1]):null;
+    if(!n1) return [p[0]+n2[0]*d,p[1]+n2[1]*d];
+    if(!n2) return [p[0]+n1[0]*d,p[1]+n1[1]*d];
+    const mx=n1[0]+n2[0], my=n1[1]+n2[1], k=1+n1[0]*n2[0]+n1[1]*n2[1];
+    return [p[0]+mx/k*d, p[1]+my/k*d];
+  });
+}
+function buildGeo(){
+  GEO={};
+  for(const [code,L] of Object.entries(NET.lines)){
+    const st=L.stations.map(s=>s.name), keyIdx=[];
+    st.forEach((s,i)=>{ if(KEY[s]) keyIdx.push(i); });
+    if(keyIdx.length<2) continue;
+    // canonical (un-offset) coordinates for every station, interpolated between key stations
+    const pts=new Array(st.length);
+    for(let k=0;k<keyIdx.length-1;k++){
+      const a=keyIdx[k], b=keyIdx[k+1], A=KEY[st[a]], B=KEY[st[b]];
+      for(let i=a;i<=b;i++){ const f=(i-a)/(b-a); pts[i]=[A[0]+(B[0]-A[0])*f, A[1]+(B[1]-A[1])*f]; }
+    }
+    for(let i=0;i<keyIdx[0];i++) pts[i]=KEY[st[keyIdx[0]]];
+    for(let i=keyIdx[keyIdx.length-1];i<st.length;i++) pts[i]=KEY[st[keyIdx[keyIdx.length-1]]];
+    // drawn path: key stations only, so corners stay crisp; then offset to the line's lane
+    const path=offsetPolyline(keyIdx.map(i=>KEY[st[i]]), LANE[code]*LANEW);
+    // station points offset the same way: shift each by the offset of its segment
+    const off=new Array(st.length);
+    for(let k=0;k<keyIdx.length-1;k++){
+      const a=keyIdx[k], b=keyIdx[k+1], P=path[k], Q=path[k+1];
+      for(let i=a;i<=b;i++){ const f=(i-a)/(b-a); off[i]=[P[0]+(Q[0]-P[0])*f, P[1]+(Q[1]-P[1])*f]; }
+    }
+    for(let i=0;i<st.length;i++) if(!off[i]) off[i]=pts[i];
+    GEO[code]={path, pts:off};
+  }
+}
+function buildNet(){
+  if(!GEO) buildGeo();
+  let lines="", ticks="", labels="";
+  const seen=new Set();
+  for(const code of ["3","2","1","4","5"]){ const g=GEO[code]; if(!g) continue;
+    lines+=`<polyline points="${g.path.map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" ")}" fill="none" stroke="${COLORS[code]}" stroke-width="3.4" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  // station markers: one small dot per station name, on the canonical point; interchanges get a capsule
+  for(const L of Object.values(NET.lines)) L.stations.forEach(s=>{ if(seen.has(s.name)) return; seen.add(s.name);
+    const users=Object.keys(NET.lines).filter(c=>GEO[c]&&NET.lines[c].stations.some(x=>x.name===s.name));
+    const pts=users.map(c=>{ const i=NET.lines[c].stations.findIndex(x=>x.name===s.name); return GEO[c].pts[i]; });
+    if(users.length>1 && INTERCHANGE.has(s.name)){
+      const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]), x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+      ticks+=`<rect x="${(x0-3.2).toFixed(1)}" y="${(y0-3.2).toFixed(1)}" width="${(x1-x0+6.4).toFixed(1)}" height="${(y1-y0+6.4).toFixed(1)}" rx="3.2" fill="#0c0f13" stroke="#eef1f4" stroke-width="1.4"/>`;
+    } else { const cx=pts.reduce((a,p)=>a+p[0],0)/pts.length, cy=pts.reduce((a,p)=>a+p[1],0)/pts.length;
+      ticks+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${users.length>1?2.6:1.9}" fill="#0c0f13" stroke="#eef1f4" stroke-width="1.1"/>`; }
+  });
+  for(const [name,dx,dy,anchor,major] of LABELS){
+    let p=KEY[name]; if(!p){ for(const c of Object.keys(GEO)){ const i=NET.lines[c].stations.findIndex(x=>x.name===name); if(i>=0){ p=GEO[c].pts[i]; break; } } }
+    if(!p) continue;
+    labels+=`<text x="${p[0]+dx}" y="${p[1]+dy}" text-anchor="${anchor}" class="${major?"major":""}">${esc(name==="Carl Berners plass"?"Carl Berners":name)}</text>`;
+  }
+  for(const name of TERMS.top){ const p=KEY[name]; labels+=`<text x="${p[0]+4}" y="${p[1]-8}" transform="rotate(-45 ${p[0]+4} ${p[1]-8})" class="major">${esc(name)}</text>`; }
+  for(const name of TERMS.bottom){ const p=KEY[name]; labels+=`<text x="${p[0]-4}" y="${p[1]+12}" text-anchor="end" transform="rotate(-45 ${p[0]-4} ${p[1]+12})" class="major">${esc(name)}</text>`; }
+  content.innerHTML=`<div class="net"><svg viewBox="-36 0 440 620" role="img" aria-label="Skjematisk kart over T-banen med tog i sanntid">${lines}${ticks}${labels}<g id="dots"></g></svg></div>
+    <div class="kpis"><div class="kpi"><small>Tog ute</small><b class="num" id="kT">–</b></div><div class="kpi"><small>Punktlige</small><b class="num" id="kP">–</b></div><div class="kpi"><small>Snitt</small><b class="num" id="kD">–</b></div></div>
+    <p class="foot">Posisjonene er beregnet fra sanntidstider. Punktlig betyr under 3 minutter forsinket. Data: Entur.</p>`;
+}
+function drawNet(t){
+  const box=$("#dots"); if(!box) return;
+  let html="", n=0, ok=0, sum=0;
+  for(const j of JOURNEYS){ const g=GEO[j.line]; if(!g) continue; const s=stateAt(j,t); if(!s) continue;
+    const i0=Math.floor(s.pos), i1=Math.min(g.pts.length-1,i0+1), f=s.pos-i0, A=g.pts[i0], B=g.pts[i1];
+    const x=A[0]+(B[0]-A[0])*f, y=A[1]+(B[1]-A[1])*f;
+    const ring=s.delay>=180?"#ff5d4f":s.delay>=60?"#f0b43c":"#0c0f13";
+    html+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5.4" fill="${COLORS[j.line]}" stroke="${ring}" stroke-width="2.4"/>`;
+    n++; if(s.delay<180) ok++; sum+=Math.max(0,s.delay);
+  }
+  box.innerHTML=html;
+  $("#kT").textContent=n; $("#kP").textContent=n?Math.round(100*ok/n)+"%":"–";
+  const avg=n?sum/n:0; $("#kD").textContent=n?`+${Math.floor(avg/60)}:${pad(Math.round(avg%60))}`:"–";
+}
+
+/* ---------- main loop ---------- */
+function build(){
+  if(!NET){ return; }
+  if(S.tab==="line") buildLine(); else buildNet();
+  tick();
+}
+function tick(){
+  if(!NET) return;
+  const t=Date.now();
+  if(S.tab==="line"){ drawLine(t); drawSheet(t); } else drawNet(t);
+  if(!JOURNEYS.length && lastOk){
+    if(!$("#empty")) content.insertAdjacentHTML("afterbegin",`<div class="msg" id="empty"><b>Ingen tog i trafikk akkurat nå</b>T-banen har nattpause. Togene dukker opp her når driften starter.</div>`);
+  } else { const e=$("#empty"); if(e) e.remove(); }
+  setLive();
+}
+document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{ S.tab=b.dataset.tab; store("lb.tab",S.tab); renderTabs(); });
+$("#pick").addEventListener("click",e=>{ const b=e.target.closest("[data-l]"); if(!b) return; S.line=b.dataset.l; store("lb.line",S.line); closeSheet(); renderTabs(); content.scrollTop=0; });
+
+let pollTimer=null;
+async function poll(){
+  clearTimeout(pollTimer);
+  if(document.visibilityState!=="visible") return;
+  try{ await loadCalls(); lastOk=Date.now(); lastErr=null; }
+  catch(e){ lastErr=e; }
+  tick();
+  pollTimer=setTimeout(poll,POLL_MS);
+}
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") poll(); });
+(function frame(){ tick(); setTimeout(()=>requestAnimationFrame(frame),250); })();
+
+(async function boot(){
+  try{ await loadNetwork(); }
+  catch(e){ content.innerHTML=`<div class="msg"><b>Fikk ikke hentet linjene</b>Sjekk at du er på nett, og prøv igjen. (${esc(e.message)})</div>`; lastErr=e; setLive(); return; }
+  if(!NET.lines[S.line]) S.line=Object.keys(NET.lines)[0];
+  renderTabs(); poll();
+})();
+
+if("serviceWorker" in navigator && (location.protocol==="https:" || location.hostname==="localhost" || location.hostname==="127.0.0.1")){
+  navigator.serviceWorker.register("linjeblikk-sw.js",{scope:"./linjeblikk"}).catch(()=>{});
+}
+</script>
+</body>
+</html>
