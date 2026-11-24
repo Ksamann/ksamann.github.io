@@ -81,6 +81,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webki
 .sheet li .mono{font:500 14px var(--f-mono)}
 .sheet li s{color:var(--dim);font:500 12px var(--f-mono)}
 .x{width:36px;height:36px;border-radius:50%;background:var(--surface-2);font-size:15px}
+.logbtn{display:flex;align-items:center;justify-content:center;min-height:46px;border-radius:14px;background:var(--c);color:#071018;font:800 16px var(--f-display);letter-spacing:.06em;text-transform:uppercase;text-decoration:none}
 
 /* ---------- network ---------- */
 .net{padding:4px 8px 0}
@@ -268,6 +269,13 @@ function drawLine(t){
 content.addEventListener("pointerdown",e=>{ const b=e.target.closest(".train"); if(!b) return; S.sel=b.dataset.j; tick(); });
 sheet.addEventListener("pointerdown",e=>{ if(e.target.closest(".x")) closeSheet(); });
 function closeSheet(){ S.sel=null; sheet.hidden=true; }
+// Link into the timing logger: same line and direction; start at the station the train is at, or the next one.
+function logLink(j,s,cs,st){
+  const ix = s.at ? Math.round(s.pos) : cs[s.next].ix;
+  if(ix==null || (j.dir===0 ? ix>=st.length-1 : ix<=0)) return "";
+  const q=new URLSearchParams({line:j.line, dir:String(j.dir), from:st[ix].name, i:String(ix)});
+  return `<a class="logbtn" style="--c:${COLORS[j.line]}" href="tbane.html?${q}">Logg denne turen fra ${esc(st[ix].name)}</a>`;
+}
 function drawSheet(t){
   if(!S.sel){ sheet.hidden=true; return; }
   const j=JOURNEYS.find(x=>x.id===S.sel), s=j&&stateAt(j,t);
@@ -275,8 +283,10 @@ function drawSheet(t){
   const st=NET.lines[j.line].stations, cs=j.calls.filter(c=>!c.cancel);
   const nxt=cs.slice(s.at?s.next+1:s.next).slice(0,4);
   const head = s.at ? `Står på ${esc(st[Math.round(s.pos)].name)}` : `Mellom ${esc(st[cs[s.next-1].ix].name)} og ${esc(st[cs[s.next].ix].name)}`;
-  sheet.innerHTML=`<div class="h"><span class="badge" style="background:${COLORS[j.line]}">${j.line}</span><div><b>Mot ${esc(j.dest||st[j.dir===0?st.length-1:0].name)}</b><small>${head} · ${s.delay<60?"i rute":`${Math.round(s.delay/60)} min forsinket`}</small></div><button class="x" aria-label="Lukk">✕</button></div>
+  const html=`<div class="h"><span class="badge" style="background:${COLORS[j.line]}">${j.line}</span><div><b>Mot ${esc(j.dest||st[j.dir===0?st.length-1:0].name)}</b><small>${head} · ${s.delay<60?"i rute":`${Math.round(s.delay/60)} min forsinket`}</small></div><button class="x" aria-label="Lukk">✕</button></div>
+    ${logLink(j,s,cs,st)}
     <ol>${nxt.map(c=>`<li><span>${esc(st[c.ix].name)}</span>${c.aArr&&Math.abs((c.arr||0)-c.aArr)>=60e3?`<s>${hm(c.aArr)}</s>`:"<s></s>"}<span class="mono num">${hm(c.arr||c.dep)}</span></li>`).join("")||`<li><span>Siste stasjon</span><s></s><span></span></li>`}</ol>`;
+  if(sheet._html!==html){ sheet.innerHTML=html; sheet._html=html; }   // redraw only on change, so taps on the link land
   sheet.hidden=false;
 }
 
