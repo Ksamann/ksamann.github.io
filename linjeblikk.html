@@ -43,7 +43,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webki
 .live.off::before,.live.stale::before{animation:none}
 @keyframes blink{50%{opacity:.25}}
 .content{flex:1;min-height:0;overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
-.tabs{display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--rule);background:var(--bg);padding:6px 4px calc(8px + env(safe-area-inset-bottom,0px))}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule);background:var(--bg);padding:6px 4px calc(8px + env(safe-area-inset-bottom,0px))}
 .tabs button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--dim);padding:6px 0}
 .tabs button svg{width:24px;height:24px}
 .tabs button[aria-selected="true"]{color:var(--fg)}
@@ -93,6 +93,54 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webki
 .kpi small{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .kpi b{font:700 20px var(--f-mono)}
 .foot{padding:0 16px 24px;font-size:12px;color:var(--dim)}
+/* ---------- my station ---------- */
+.stn{padding:4px 16px 120px;display:flex;flex-direction:column;gap:16px}
+.fav{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--surface);border-radius:18px;padding:14px}
+.fav b{display:block;font-family:var(--f-display);font-weight:700;font-size:28px;line-height:1}
+.fav .chg{margin-top:6px;font-size:14px;font-weight:600;color:var(--muted);text-decoration:underline;text-underline-offset:3px;padding:2px 0}
+.go{min-width:104px;border-radius:14px;padding:10px 12px;background:var(--surface-2);text-align:center;line-height:1.15}
+.go small{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.go b{display:block;font:700 24px var(--f-mono);color:var(--ok);margin-top:2px}
+.go.now b{color:var(--late)}
+.go em{display:block;font-style:normal;font-size:11px;color:var(--muted);margin-top:3px}
+.walk{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted)}
+.walk button{width:36px;height:36px;border-radius:10px;background:var(--surface);font-size:20px;font-weight:600;color:var(--fg)}
+.walk b{color:var(--fg);font-family:var(--f-mono);min-width:56px;text-align:center}
+.grp h3{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.grp h3 button{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--dim);padding:6px 0 6px 10px}
+.grp h3 button[aria-pressed="true"]{color:var(--late)}
+.dep{display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--rule)}
+.dep:first-of-type{border-top:0}
+.dep .t{min-width:0}
+.dep .t b{display:block;font-family:var(--f-display);font-weight:600;font-size:19px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dep .t small{display:block;color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dep .t small i{font-style:normal;color:var(--fg)}
+.dep .t small .lt{color:var(--late)}
+.dep .t small .bd{color:var(--bad)}
+.dep .m{text-align:right;font:700 24px var(--f-mono);line-height:1}
+.dep .m small{display:block;font:500 11px var(--f-mono);color:var(--muted);margin-top:3px}
+.dep .m.now{color:var(--ok)}
+.prog{grid-column:2/4;height:4px;border-radius:2px;background:var(--surface-2);overflow:hidden;margin-top:-2px}
+.prog i{display:block;height:100%;border-radius:2px}
+.none{color:var(--muted);font-size:14px;padding:8px 0}
+.picker{padding:4px 16px 40px;display:flex;flex-direction:column;gap:12px}
+.picker input{width:100%;min-height:50px;border-radius:14px;background:var(--surface);border:1px solid var(--rule);color:var(--fg);font:inherit;font-size:17px;padding:12px 14px}
+.picker h3{margin:6px 0 0;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.plist{list-style:none;margin:0;padding:0}
+.plist button{width:100%;display:flex;align-items:center;gap:10px;min-height:48px;border-bottom:1px solid var(--rule);text-align:left;font-family:var(--f-display);font-weight:600;font-size:19px}
+.plist button span{flex:1;min-width:0}
+.dots{display:flex;gap:4px}
+.dots i{width:10px;height:10px;border-radius:50%}
+
+/* ---------- stringline ---------- */
+.sl{padding:4px 12px 24px}
+.seg{display:flex;gap:8px;padding:0 4px 10px}
+.seg button{min-height:38px;padding:0 14px;border-radius:12px;background:var(--surface);font-size:14px;font-weight:600;color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+.sl svg{display:block;width:100%;height:auto}
+.sl text{font-family:var(--f-mono);font-size:9.5px;fill:var(--muted)}
+.sl text.st{font-family:var(--f-display);font-weight:700;font-size:11px;fill:var(--fg)}
+.sl .lg{padding:10px 4px 0;font-size:13px;color:var(--muted);display:flex;flex-direction:column;gap:4px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
@@ -107,6 +155,8 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webki
   <nav class="tabs" role="tablist">
     <button role="tab" data-tab="line" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18"/><circle cx="12" cy="7" r="2.5" fill="currentColor"/><circle cx="12" cy="17" r="2.5"/></svg>Linje</button>
     <button role="tab" data-tab="net" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M8 12V4M16 12v8"/><circle cx="8" cy="12" r="2" fill="currentColor"/><circle cx="16" cy="12" r="2" fill="currentColor"/></svg>Nettverk</button>
+    <button role="tab" data-tab="stn" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Stasjon</button>
+    <button role="tab" data-tab="sl" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v18M19 3v18"/><path d="M5 6l14 5M5 12l14 5M19 5 5 12"/></svg>Ruteplan</button>
   </nav>
 </div>
 <div class="sheet" id="sheet" hidden></div>
@@ -227,7 +277,9 @@ const dTxt = d => d<60 ? "0" : (d>0?"+":"")+Math.round(d/60);
 /* =====================================================================
    UI
    ===================================================================== */
-const S = { tab: store("lb.tab")||"line", line: store("lb.line")||"5", sel:null };
+const S = { tab: store("lb.tab")||"line", line: store("lb.line")||"5", sel:null,
+  stn: store("lb.stn"), walk: store("lb.walk")||4, pinned: store("lb.pin")||{}, recent: store("lb.recent")||[], picking:false, seg: store("lb.seg")||"tunnel" };
+if(!["line","net","stn","sl"].includes(S.tab)) S.tab="line";
 if(!COLORS[S.line]) S.line="5";
 const content=$("#content"), sheet=$("#sheet");
 
@@ -242,7 +294,7 @@ function setLive(){
 function renderTabs(){
   document.querySelectorAll("[data-tab]").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===S.tab));
   $("#linebar").hidden = S.tab!=="line";
-  $("#title").textContent = S.tab==="line" ? `Linje ${S.line}` : "Nettverket";
+  $("#title").textContent = ({line:`Linje ${S.line}`, net:"Nettverket", stn:"Min stasjon", sl:"Grafisk ruteplan"})[S.tab];
   document.documentElement.style.setProperty("--c",COLORS[S.line]);
   if(S.tab!=="line") closeSheet();
   build();
@@ -394,16 +446,154 @@ function drawNet(t){
   const avg=n?sum/n:0; $("#kD").textContent=n?`+${Math.floor(avg/60)}:${pad(Math.round(avg%60))}`:"–";
 }
 
+/* ---------- station index ---------- */
+let NAMEOF=null, IDSOF=null, LINESAT=null;
+function indexStations(){
+  if(NAMEOF) return;
+  NAMEOF={}; IDSOF={}; LINESAT={};
+  for(const [code,L] of Object.entries(NET.lines)) for(const s of L.stations){
+    NAMEOF[s.id]=s.name; (IDSOF[s.name]||(IDSOF[s.name]=new Set())).add(s.id);
+    (LINESAT[s.name]||(LINESAT[s.name]=new Set())).add(code);
+  }
+}
+
+/* ---------- my station ----------
+   Departures at the chosen station within the data window (about the next 17 min),
+   grouped by the next station the train calls at. Each row says where the train is
+   now, computed the same way as on the line view. "Gå om" uses the walking time and
+   the pinned direction (★), or the first departure in any direction. */
+function departures(name,t){
+  const ids=IDSOF[name]; if(!ids) return [];
+  const out=[];
+  for(const j of JOURNEYS){
+    const cs=j.calls.filter(c=>!c.cancel), st=NET.lines[j.line].stations;
+    for(let k=0;k<cs.length;k++){ const c=cs[k];
+      if(!ids.has(c.stop) || c.dep==null || c.dep<t-15e3) continue;   // no departure here (terminates) or already gone
+      const s=stateAt(j,t); let away=null, where="";
+      if(s){ const d = j.dir===0 ? c.ix-s.pos : s.pos-c.ix; if(d<-0.05) continue; away=Math.max(0,d);
+        where = s.at ? st[Math.round(s.pos)].name : st[cs[s.next-1] ? cs[s.next-1].ix : Math.round(s.pos)].name; }
+      // next station from the line's route (the next call may lie outside the data window)
+      const nIx = j.dir===0 ? c.ix+1 : c.ix-1, nx=cs[k+1];
+      const next = st[nIx] ? st[nIx].name : nx ? NAMEOF[nx.stop] : (j.dest||"");
+      out.push({j, c, when:c.dep, delay:delayOf(c), away, at:s&&s.at, wait:s&&s.wait, where, first:NAMEOF[cs[0].stop], next});
+      break;
+    }
+  }
+  return out.sort((a,b)=>a.when-b.when);
+}
+function buildStn(){
+  if(!S.stn || !IDSOF[S.stn] || S.picking) return buildPicker();
+  content.innerHTML=`<div class="stn" id="stn"></div>`; stnHTML=null;
+}
+let stnHTML=null;
+function drawStn(t){
+  const box=$("#stn"); if(!box) return;
+  const name=S.stn, all=departures(name,t), groups=new Map();
+  for(const d of all){ if(!groups.has(d.next)) groups.set(d.next,[]); groups.get(d.next).push(d); }
+  const keys=[...groups.keys()].sort((a,b)=>a.localeCompare(b,"no"));
+  const pin=S.pinned[name] && groups.has(S.pinned[name]) ? S.pinned[name] : null;
+  const walkMs=S.walk*60e3, pool=(pin?groups.get(pin):all).filter(d=>d.when-walkMs>=t-30e3);
+  const target=pool[0], goMin=target?(target.when-walkMs-t)/60e3:null;
+  const go = target ? `<div class="go ${goMin<1?"now":""}"><small>${goMin<1?"Gå":"Gå om"}</small><b class="num">${goMin<1?"nå":Math.floor(goMin)+" min"}</b><em>Linje ${esc(target.j.line)} kl. ${hm(target.when)}</em></div>` : `<div class="go"><small>Gå om</small><b>–</b></div>`;
+  const row=d=>{
+    const m=(d.when-t)/60e3, col=COLORS[d.j.line];
+    let pos;
+    if(d.away==null) pos = d.first===name ? "starter her" : `venter på avgang fra <i>${esc(d.first)}</i>`;
+    else if(d.at && d.away<0.05) pos = "<i>står på stasjonen</i>";
+    else { const n=Math.ceil(d.away-1e-6); pos = (n<=1 && !d.at) ? `neste stopp · fra <i>${esc(d.where)}</i>` : `${n} stopp unna · ${d.at?"ved":"fra"} <i>${esc(d.where)}</i>`; }
+    const dl = d.delay>=180 ? ` · <span class="bd">+${Math.round(d.delay/60)} min</span>` : d.delay>=60 ? ` · <span class="lt">+${Math.round(d.delay/60)} min</span>` : "";
+    const pct = d.away==null ? 0 : Math.max(4, 100-Math.min(100,d.away*12));
+    return `<div class="dep"><span class="badge" style="background:${col}">${esc(d.j.line)}</span><span class="t"><b>${esc(d.j.dest||"")}</b><small>${pos}${dl}</small></span>
+      <span class="m num ${m<1?"now":""}">${m<1?"nå":Math.floor(m)}${m<1?"":"<small>min</small>"}</span><span class="prog"><i style="width:${pct}%;background:${col}"></i></span></div>`;
+  };
+  const html=`<div class="fav"><div><b>${esc(name)}</b><button class="chg" id="chg">Bytt stasjon</button></div>${go}</div>
+    <div class="walk"><span>Gåtid til stasjonen</span><button id="wm" aria-label="Kortere gåtid">−</button><b class="num">${S.walk} min</b><button id="wp" aria-label="Lengre gåtid">+</button></div>
+    ${keys.length ? keys.map(k=>`<div class="grp"><h3><span>Neste stopp ${esc(k)}</span><button data-pin="${esc(k)}" aria-pressed="${pin===k}">${pin===k?"★ Min retning":"☆ Min retning"}</button></h3>${groups.get(k).slice(0,4).map(row).join("")}</div>`).join("")
+      : `<p class="none">Ingen avganger de neste minuttene.</p>`}`;
+  if(html!==stnHTML){ $("#stn").innerHTML=html; stnHTML=html; }
+}
+content.addEventListener("click",e=>{
+  if(S.tab!=="stn") return;
+  const t=e.target;
+  if(t.closest("#chg")){ S.picking=true; build(); return; }
+  if(t.closest("#wm")){ S.walk=Math.max(0,S.walk-1); store("lb.walk",S.walk); tick(); return; }
+  if(t.closest("#wp")){ S.walk=Math.min(30,S.walk+1); store("lb.walk",S.walk); tick(); return; }
+  const pb=t.closest("[data-pin]"); if(pb){ const k=pb.dataset.pin; if(S.pinned[S.stn]===k) delete S.pinned[S.stn]; else S.pinned[S.stn]=k; store("lb.pin",S.pinned); tick(); return; }
+  const ps=t.closest("[data-stn]"); if(ps){ S.stn=ps.dataset.stn; S.picking=false; store("lb.stn",S.stn);
+    S.recent=[S.stn,...S.recent.filter(x=>x!==S.stn)].slice(0,5); store("lb.recent",S.recent); build(); content.scrollTop=0; }
+});
+function buildPicker(){
+  const names=Object.keys(IDSOF).sort((a,b)=>a.localeCompare(b,"no"));
+  const item=n=>`<li><button data-stn="${esc(n)}"><span>${esc(n)}</span><span class="dots">${[...LINESAT[n]].sort().map(c=>`<i style="background:${COLORS[c]}"></i>`).join("")}</span></button></li>`;
+  const recent=S.recent.filter(n=>IDSOF[n]);
+  content.innerHTML=`<div class="picker">
+    <label class="label" for="q" style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Velg stasjon</label>
+    <input id="q" type="search" placeholder="Søk, for eksempel Tøyen" autocomplete="off" enterkeyhint="search">
+    ${recent.length?`<h3>Nylig brukt</h3><ul class="plist">${recent.map(item).join("")}</ul>`:""}
+    <h3>Alle stasjoner</h3><ul class="plist" id="all">${names.map(item).join("")}</ul></div>`;
+  const q=$("#q"), all=$("#all");
+  q.oninput=()=>{ const v=q.value.trim().toLowerCase(); all.querySelectorAll("li").forEach(li=>li.hidden=!!v && !li.textContent.toLowerCase().includes(v)); };
+}
+
+/* ---------- stringline (graphic timetable) ----------
+   Time runs down, stations across. Each train is a line through its arrival and
+   departure at each station: solid up to now, dashed for the forecast. Steep = fast,
+   vertical = standing still. Lines bunching together show trains catching up. */
+const SEGS = {
+  tunnel:{label:"Fellestunnelen", st:["Majorstuen","Nationaltheatret","Stortinget","Jernbanetorget","Grønland","Tøyen"]},
+  east:{label:"Tøyen–Brynseng", st:["Tøyen","Ensjø","Helsfyr","Brynseng"]}
+};
+const SHORT = {"Majorstuen":"Majorst.","Nationaltheatret":"Nat.th.","Stortinget":"Storting.","Jernbanetorget":"Jernb.t.","Grønland":"Grønland","Tøyen":"Tøyen","Ensjø":"Ensjø","Helsfyr":"Helsfyr","Brynseng":"Brynseng"};
+function buildSL(){
+  if(!SEGS[S.seg]) S.seg="tunnel";
+  content.innerHTML=`<div class="sl"><div class="seg" role="group" aria-label="Strekning">${Object.entries(SEGS).map(([k,v])=>`<button data-seg="${k}" aria-pressed="${k===S.seg}">${v.label}</button>`).join("")}</div>
+    <svg id="slg" viewBox="0 0 360 560" role="img" aria-label="Grafisk ruteplan for ${esc(SEGS[S.seg].label)}"></svg>
+    <div class="lg"><span>Tiden går nedover. Heltrukket er kjørt, stiplet er prognose.</span><span>Bratt linje er kjøring, loddrett er opphold. Linjer som nærmer seg hverandre betyr tog som tar igjen toget foran.</span></div></div>`;
+  slLast=0;
+}
+content.addEventListener("click",e=>{ const b=e.target.closest("[data-seg]"); if(!b) return; S.seg=b.dataset.seg; store("lb.seg",S.seg); build(); });
+let slLast=0;
+function drawSL(t){
+  const svg=$("#slg"); if(!svg || t-slLast<1000) return; slLast=t;
+  const seg=SEGS[S.seg].st, W=360, H=560, top=30, bot=10, left=40, right=22, past=8*60e3, fut=14*60e3;
+  const xs=i=>left+i*(W-left-right)/(seg.length-1), yt=ts=>top+(ts-(t-past))/(past+fut)*(H-top-bot), yNow=yt(t);
+  let g=`<defs><clipPath id="cp"><rect x="0" y="${top-2}" width="${W}" height="${yNow-top+2}"/></clipPath><clipPath id="cf"><rect x="0" y="${yNow}" width="${W}" height="${H-yNow}"/></clipPath></defs>`;
+  seg.forEach((n,i)=>{ const an=i===0?"start":i===seg.length-1?"end":"middle", lx=xs(i)+(i===0?-6:i===seg.length-1?6:0);
+    g+=`<line x1="${xs(i)}" x2="${xs(i)}" y1="${top-4}" y2="${H-bot}" stroke="#262e38"/><text class="st" x="${lx}" y="14" text-anchor="${an}">${esc(SHORT[n]||n)}</text>`; });
+  for(let m=Math.ceil((t-past)/120e3)*120e3; m<=t+fut; m+=120e3){ const y=yt(m); g+=`<line x1="${left-4}" x2="${W-right}" y1="${y}" y2="${y}" stroke="#171c22"/><text x="0" y="${y+3}">${hm(m)}</text>`; }
+  const ix={}; seg.forEach((n,i)=>ix[n]=i);
+  let lines="";
+  for(const j of JOURNEYS){
+    const runs=[]; let cur=[];
+    for(const c of j.calls){ if(c.cancel) continue; const i=ix[NAMEOF[c.stop]];
+      if(i==null){ if(cur.length) runs.push(cur), cur=[]; continue; }
+      const a=c.arr!=null?c.arr:c.dep, d=c.dep!=null?c.dep:c.arr; if(a==null) continue;
+      cur.push([xs(i),yt(a)],[xs(i),yt(d)]); }
+    if(cur.length) runs.push(cur);
+    for(const r of runs){ if(r.length<4) continue;
+      const pts=r.map(p=>p[0].toFixed(1)+","+p[1].toFixed(1)).join(" ");
+      lines+=`<polyline points="${pts}" fill="none" stroke="${COLORS[j.line]}" stroke-width="2.2" stroke-linejoin="round" clip-path="url(#cp)"/>`
+           +`<polyline points="${pts}" fill="none" stroke="${COLORS[j.line]}" stroke-width="1.6" stroke-dasharray="4 3" opacity=".75" clip-path="url(#cf)"/>`; }
+  }
+  g+=`<svg x="${left-6}" y="${top-4}" width="${W-left-right+12}" height="${H-top-bot+4}" viewBox="${left-6} ${top-4} ${W-left-right+12} ${H-top-bot+4}" overflow="hidden">${lines}</svg>`;
+  g+=`<line x1="${left-4}" x2="${W-right}" y1="${yNow}" y2="${yNow}" stroke="#eef1f4" stroke-width="1.4"/><rect x="${W-right-36}" y="${yNow-9}" width="36" height="17" rx="5" fill="#eef1f4"/><text x="${W-right-18}" y="${yNow+3.5}" text-anchor="middle" style="fill:#0c0f13;font-weight:700">NÅ</text>`;
+  svg.innerHTML=g;
+}
+
 /* ---------- main loop ---------- */
 function build(){
   if(!NET){ return; }
-  if(S.tab==="line") buildLine(); else buildNet();
+  indexStations();
+  ({line:buildLine, net:buildNet, stn:buildStn, sl:buildSL})[S.tab]();
   tick();
 }
 function tick(){
   if(!NET) return;
   const t=Date.now();
-  if(S.tab==="line"){ drawLine(t); drawSheet(t); } else drawNet(t);
+  if(S.tab==="line"){ drawLine(t); drawSheet(t); }
+  else if(S.tab==="net") drawNet(t);
+  else if(S.tab==="stn") drawStn(t);
+  else drawSL(t);
   if(!JOURNEYS.length && lastOk){
     if(!$("#empty")) content.insertAdjacentHTML("afterbegin",`<div class="msg" id="empty"><b>Ingen tog i trafikk akkurat nå</b>T-banen har nattpause. Togene dukker opp her når driften starter.</div>`);
   } else { const e=$("#empty"); if(e) e.remove(); }
