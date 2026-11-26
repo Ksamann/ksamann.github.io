@@ -98,8 +98,10 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webki
 .map{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--bg);border-top:1px solid var(--rule)}
 .map svg{display:block;width:100%;height:100%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .map svg:active{cursor:grabbing}
-.map text{font-family:var(--f-display);font-weight:600;font-size:8.5px;fill:var(--muted)}
-.map text.major{fill:var(--fg);font-weight:700;font-size:9.5px}
+.map text{font-family:var(--f-display);font-weight:600;font-size:10.5px;fill:#c3cad2}
+.map text.major{fill:var(--fg);font-weight:700}
+.map text.term{fill:var(--fg);font-weight:800;font-size:15px}
+.map text.tn{fill:#071018;font-weight:800;font-size:12px}
 .map .pulse{animation:pulse 1.6s infinite;transform-box:fill-box;transform-origin:center}
 @keyframes pulse{0%{opacity:1;transform:scale(.8)}100%{opacity:.2;transform:scale(1.3)}}
 .zoom{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:12px;display:flex;flex-direction:column;gap:6px}
@@ -394,20 +396,28 @@ sheet.addEventListener("click",e=>{ const b=e.target.closest("[data-show]"); if(
    polyline through key stations; the stations in between are spread evenly along
    it. Shared track is drawn as parallel lanes in a fixed order. Every station is
    named; labels sit on the open side of the line. World units: 1040 × 540. */
+// Strip layout, as on the maps above the doors: each branch is a horizontal row,
+// the ring is a rounded rectangle whose bottom edge is the shared tunnel, and
+// branches join and leave the trunk on 45° slopes. 54 units between stations.
 const KEY = {
-  // trunk and east (y = 300)
-  "Majorstuen":[360,300], "Tøyen":[600,300], "Brynseng":[740,300], "Hellerud":[790,300], "Ellingsrudåsen":[1000,300],
-  "Høyenhall":[760,320], "Bergkrystallen":[760,510], "Godlia":[810,320], "Ulsrud":[880,390], "Mortensrud":[880,510],
-  // west
-  "Smestad":[260,300], "Østerås":[20,300], "Jar":[190,370], "Kolsås":[20,370],
-  "Frøen":[330,270], "Slemdal":[330,150], "Frognerseteren":[200,20],
-  // north and ring
-  "Ullevål stadion":[360,180], "Sognsvann":[360,30], "Sinsen":[560,180], "Carl Berners plass":[560,260],
-  "Økern":[640,180], "Vestli":[790,30]
+  // ring and trunk
+  "Majorstuen":[1040,260], "Tøyen":[1310,260], "Ullevål stadion":[1040,90], "Sinsen":[1360,90], "Carl Berners plass":[1360,210],
+  // west rows
+  "Sognsvann":[720,40], "Berg":[990,40],
+  "Frognerseteren":[-28,110], "Frøen":[890,110],
+  "Østerås":[494,200], "Makrellbekken":[872,200], "Smestad":[932,260],
+  "Kolsås":[230,260],
+  // east rows
+  "Økern":[1480,90], "Vestli":[2128,90],
+  "Brynseng":[1472,260], "Hellerud":[1526,260], "Tveita":[1636,150], "Ellingsrudåsen":[1906,150],
+  "Godlia":[1581,205], "Mortensrud":[1959,205],
+  "Høyenhall":[1522,310], "Bergkrystallen":[1900,310]
 };
-const LANE = {"1":-2,"2":-1,"3":0,"4":1,"5":2}, LANEW=3.2, WORLD={x:-20,y:-20,w:1100,h:580};
+// lane order on shared track, top to bottom: the ring lines on top, line 3 at the bottom
+const LANE = {"5":-2,"4":-1,"1":0,"2":1,"3":2}, LANEW=3.4, WORLD={x:-190,y:-30,w:2460,h:390};
 const INTERCHANGE = new Set(["Majorstuen","Nationaltheatret","Stortinget","Jernbanetorget","Grønland","Tøyen","Ensjø","Helsfyr","Brynseng","Smestad","Ullevål stadion","Sinsen","Økern","Carl Berners plass","Hellerud","Borgen","Forskningsparken","Blindern","Storo","Nydalen"]);
-const TERMINI_ALL = new Set(["Østerås","Kolsås","Frognerseteren","Sognsvann","Vestli","Bergkrystallen","Mortensrud","Ellingsrudåsen"]);
+const TERM_LEFT = new Set(["Frognerseteren","Østerås","Kolsås","Sognsvann"]), TERM_RIGHT = new Set(["Vestli","Ellingsrudåsen","Mortensrud","Bergkrystallen"]);
+const TERMINI_ALL = new Set([...TERM_LEFT,...TERM_RIGHT]);
 let GEO=null, TRAINPOS=[];
 function offsetPolyline(pts,d){
   if(!d) return pts.slice();
@@ -420,6 +430,14 @@ function offsetPolyline(pts,d){
     const mx=n1[0]+n2[0], my=n1[1]+n2[1], k=1+n1[0]*n2[0]+n1[1]*n2[1];
     return [p[0]+mx/k*d, p[1]+my/k*d];
   });
+}
+function roundPath(P,r){
+  const f=v=>v.toFixed(1); let d=`M${f(P[0][0])} ${f(P[0][1])}`;
+  for(let i=1;i<P.length-1;i++){ const a=P[i-1], b=P[i], c=P[i+1];
+    const l1=Math.hypot(b[0]-a[0],b[1]-a[1]), l2=Math.hypot(c[0]-b[0],c[1]-b[1]); if(!l1||!l2) continue;
+    const rr=Math.min(r,l1/2,l2/2), p=[b[0]+(a[0]-b[0])*rr/l1, b[1]+(a[1]-b[1])*rr/l1], q=[b[0]+(c[0]-b[0])*rr/l2, b[1]+(c[1]-b[1])*rr/l2];
+    d+=` L${f(p[0])} ${f(p[1])} Q${f(b[0])} ${f(b[1])} ${f(q[0])} ${f(q[1])}`; }
+  const z=P[P.length-1]; return d+` L${f(z[0])} ${f(z[1])}`;
 }
 function buildGeo(){
   GEO={};
@@ -444,52 +462,53 @@ function buildGeo(){
   }
 }
 // Label for one station: placed on the open side of its line, rotated 45° on horizontal track (as on door maps).
-// hand-placed labels where the general rule collides with a neighbouring line
-const LABEL_FIX = {
-  "Ullevål stadion": (x,y,h)=>[x+h+5, y+h+11, "start"],
-  "Frøen":           (x,y,h)=>[x-h-5, y-2, "end"],
-  "Økern":           (x,y,h)=>[x-5, y-h-6, "end"],
-  "Borgen":          (x,y,h)=>[x-2, y+h+12, "start"],
-  "Høyenhall":       (x,y,h)=>[x-h-5, y+3, "end"],
-  "Brynseng":        (x,y,h)=>[x-4, y-h-6, "end"],
-  "Carl Berners plass": (x,y,h)=>[x-h-5, y+3, "end"]
-};
-function labelFor(name, x, y, dx, dy, half, major){
+// Station label. Default: rotated -35° above the line, as on the door maps.
+// Inside the ring the labels sit horizontally inside it; a few corners are placed by hand.
+function labelFor(name, x, y, half, major){
   const t=esc(name), cls=major?"major":"";
-  if(LABEL_FIX[name]){ const [lx,ly,an]=LABEL_FIX[name](x,y,half); return `<text class="${cls}" x="${lx}" y="${ly}" text-anchor="${an}">${t}</text>`; }
-  const h=Math.abs(dy)<0.3*Math.abs(dx), v=Math.abs(dx)<0.3*Math.abs(dy);
-  if(h){
-    const below = (y>=295 && y<=305 && x>=300 && x<=750) || y>=360 || name==="Løren";   // trunk and line 3 west: below; the rest above
-    if(below){ const ly=y+half+7; return `<text class="${cls}" x="${x-2}" y="${ly}" text-anchor="end" transform="rotate(-45 ${x-2} ${ly})">${t}</text>`; }
-    const ly=y-half-6; return `<text class="${cls}" x="${x+2}" y="${ly}" transform="rotate(-45 ${x+2} ${ly})">${t}</text>`;
-  }
-  if(v){
-    const left = x<=340 || (x>=700 && x<=800 && y>300) || (x>=550 && x<=570 && y>185 && y<255);
-    return left ? `<text class="${cls}" x="${x-half-5}" y="${y+3}" text-anchor="end">${t}</text>` : `<text class="${cls}" x="${x+half+5}" y="${y+3}">${t}</text>`;
-  }
-  const slash = (dx>0)!==(dy>0);                                            // "/" or "\"
-  if(slash) return `<text class="${cls}" x="${x+half+4}" y="${y+half+8}">${t}</text>`;
-  return x<340 ? `<text class="${cls}" x="${x-half-4}" y="${y+half+8}" text-anchor="end">${t}</text>` : `<text class="${cls}" x="${x+half+4}" y="${y-half-3}">${t}</text>`;
+  const H=(lx,ly,an="start")=>`<text class="${cls}" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${an}">${t}</text>`;
+  const R=(lx,ly,an="start")=>`<text class="${cls}" x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${an}" transform="rotate(-35 ${lx.toFixed(1)} ${ly.toFixed(1)})">${t}</text>`;
+  if(name==="Ullevål stadion") return H(x+half+6, y+half+24);
+  if(name==="Sinsen") return H(x-half-4, y+half+12, "end");
+  if(name==="Carl Berners plass") return H(x+half+8, y+4);
+  if(name==="Hasle") return H(x+half+6, y+half+8);
+  if(name==="Hellerud") return H(x-half-2, y-half-8, "end");
+  if(name==="Brynseng") return R(x-2, y+half+9, "end");
+  if(name==="Tøyen") return R(x-2, y+half+9, "end");
+  if(name==="Godlia") return H(x+half+4, y+half+14);
+  if(Math.abs(y-90)<10 && x>1050 && x<1350) return H(x, y+half+12, "middle");          // ring top, inside
+  if(Math.abs(x-1040)<10 && y>100 && y<250) return H(x+half+6, y+4);                    // ring west side, inside
+  return R(x+2, y-half-5);
+}
+function terminusLabel(name, x, y, half){
+  const lines=[...(LINESAT[name]||[])].sort(), w=18, gap=3, right=TERM_RIGHT.has(name);
+  let g="", bx = right ? x+half+8 : x-half-8-lines.length*(w+gap)+gap;
+  for(const c of lines){ g+=`<rect x="${bx}" y="${y-w/2}" width="${w}" height="${w}" rx="3" fill="${COLORS[c]}"/><text class="tn" x="${bx+w/2}" y="${y+4.5}" text-anchor="middle">${c}</text>`; bx+=w+gap; }
+  const tx = right ? bx+4 : x-half-12-lines.length*(w+gap);
+  return g+`<text class="term" x="${tx}" y="${y+5}" text-anchor="${right?"start":"end"}">${esc(name)}</text>`;
 }
 function buildNet(){
   if(!GEO) buildGeo();
+  indexStations();
   let lines="", ticks="", labels="";
   for(const code of ["3","2","1","4","5"]){ const g=GEO[code]; if(!g) continue;
-    lines+=`<polyline points="${g.path.map(p=>p.map(v=>v.toFixed(1)).join(",")).join(" ")}" fill="none" stroke="${COLORS[code]}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`;
+    lines+=`<path d="${roundPath(g.path,16)}" fill="none" stroke="${COLORS[code]}" stroke-width="3.2" stroke-linecap="round"/>`;
   }
   const seen=new Set();
   for(const L of Object.values(NET.lines)) L.stations.forEach(s=>{ if(seen.has(s.name)) return; seen.add(s.name);
     const users=Object.keys(NET.lines).filter(c=>GEO[c]&&NET.lines[c].stations.some(x=>x.name===s.name));
     const pts=users.map(c=>GEO[c].pts[NET.lines[c].stations.findIndex(x=>x.name===s.name)]);
     const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]), x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
-    const cx=(x0+x1)/2, cy=(y0+y1)/2, half=Math.max(x1-x0,y1-y0)/2+2.5;
+    const cx=(x0+x1)/2, cy=(y0+y1)/2, half=Math.max(x1-x0,y1-y0)/2+3;
     const ic=users.length>1 && INTERCHANGE.has(s.name);
-    if(ic) ticks+=`<rect x="${(x0-3.4).toFixed(1)}" y="${(y0-3.4).toFixed(1)}" width="${(x1-x0+6.8).toFixed(1)}" height="${(y1-y0+6.8).toFixed(1)}" rx="3.4" fill="#0c0f13" stroke="#eef1f4" stroke-width="1.3"/>`;
-    else ticks+=`<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="${users.length>1?2.6:2}" fill="#0c0f13" stroke="#eef1f4" stroke-width="1.1"/>`;
-    // direction of the track here, from the first line that serves the station (canonical points)
-    const c0=users[0], st=NET.lines[c0].stations, i=st.findIndex(x=>x.name===s.name), B=GEO[c0].base;
-    const P=B[Math.max(0,i-1)], Q=B[Math.min(st.length-1,i+1)];
-    labels+=labelFor(s.name, cx, cy, Q[0]-P[0], Q[1]-P[1], half, ic||TERMINI_ALL.has(s.name));
+    if(ic) ticks+=`<rect x="${(x0-3.6).toFixed(1)}" y="${(y0-3.6).toFixed(1)}" width="${(x1-x0+7.2).toFixed(1)}" height="${(y1-y0+7.2).toFixed(1)}" rx="3.6" fill="#0c0f13" stroke="#eef1f4" stroke-width="1.4"/>`;
+    else {
+      // tick across the line(s), perpendicular to the track
+      const c0=users[0], st=NET.lines[c0].stations, i=st.findIndex(x=>x.name===s.name), B=GEO[c0].base;
+      const P=B[Math.max(0,i-1)], Q=B[Math.min(st.length-1,i+1)], dx=Q[0]-P[0], dy=Q[1]-P[1], l=Math.hypot(dx,dy)||1, nx=-dy/l, ny=dx/l, e=half+1.5;
+      ticks+=`<line x1="${(cx-nx*e).toFixed(1)}" y1="${(cy-ny*e).toFixed(1)}" x2="${(cx+nx*e).toFixed(1)}" y2="${(cy+ny*e).toFixed(1)}" stroke="#eef1f4" stroke-width="1.6" stroke-linecap="round"/>`;
+    }
+    labels += TERMINI_ALL.has(s.name) ? terminusLabel(s.name,cx,cy,half) : labelFor(s.name, cx, cy, half, ic);
   });
   content.innerHTML=`<div class="netview">
     <div class="map" id="map"><svg id="netsvg" role="img" aria-label="Linjekart over T-banen med tog i sanntid. Dra for å flytte, knip eller bruk knappene for å zoome.">
@@ -532,7 +551,7 @@ function initPanZoom(){
     VIEW.tx=Math.min(bx,Math.max(ax,VIEW.tx)); VIEW.ty=Math.min(by,Math.max(ay,VIEW.ty)); };
   const zoomAt=(f,sx,sy)=>{ const k0=VIEW.k; VIEW.k=Math.min(8,Math.max(fitK()*0.9,k0*f)); const r=VIEW.k/k0; VIEW.tx=sx-(sx-VIEW.tx)*r; VIEW.ty=sy-(sy-VIEW.ty)*r; apply(); };
   const fitAll=()=>{ const z=size(); VIEW.k=fitK(); VIEW.tx=(z.w-WORLD.w*VIEW.k)/2-WORLD.x*VIEW.k; VIEW.ty=(z.h-WORLD.h*VIEW.k)/2-WORLD.y*VIEW.k; apply(); };
-  const home=()=>{ const z=size(); VIEW.k=Math.max(fitK(), z.h/WORLD.h); VIEW.tx=z.w/2-520*VIEW.k; VIEW.ty=(z.h-WORLD.h*VIEW.k)/2-WORLD.y*VIEW.k; apply(); };
+  const home=()=>{ const z=size(); VIEW.k=Math.max(fitK(), z.h/WORLD.h); VIEW.tx=z.w/2-1175*VIEW.k; VIEW.ty=(z.h-WORLD.h*VIEW.k)/2-WORLD.y*VIEW.k; apply(); };
   VIEW.center=(x,y,k)=>{ const z=size(); if(k) VIEW.k=Math.max(VIEW.k,k); VIEW.tx=z.w/2-x*VIEW.k; VIEW.ty=z.h*0.38-y*VIEW.k; apply(); };
   if(!VIEW.k) home(); else apply();
   new ResizeObserver(()=>apply()).observe(map);
