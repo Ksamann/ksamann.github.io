@@ -20,15 +20,16 @@ export function stops(trip){
   const o=off(trip), out=[]; let cur=null;
   for(const e of trip.events){
     const t=e.t+o;
-    if(e.type==="dep"){ if(cur && cur.idx===e.idx && cur.dep==null) cur.dep=t; else { cur={idx:e.idx,arr:null,dep:t}; out.push(cur);} }
-    else { cur={idx:e.idx,arr:t,dep:null}; out.push(cur); }
+    const src=e.source||"manual";
+    if(e.type==="dep"){ if(cur && cur.idx===e.idx && cur.dep==null){ cur.dep=t; cur.ds=src; } else { cur={idx:e.idx,arr:null,dep:t,as:null,ds:src}; out.push(cur);} }
+    else { cur={idx:e.idx,arr:t,dep:null,as:src,ds:null}; out.push(cur); }
   }
   return out;
 }
 export function segments(trip){
   const list=stops(trip), r=trip.route;
   return list.map((s,i)=>{ const n=list[i+1]; return {
-    seq:i+1, idx:s.idx, station:r[s.idx].name, stopId:r[s.idx].id||"", arr:s.arr, dep:s.dep,
+    seq:i+1, idx:s.idx, station:r[s.idx].name, stopId:r[s.idx].id||"", arr:s.arr, dep:s.dep, arrSrc:s.as, depSrc:s.ds,
     dwell:(s.arr!=null&&s.dep!=null)?s.dep-s.arr:null,
     run:(s.dep!=null&&n&&n.arr!=null)?n.arr-s.dep:null,
     to:n?r[n.idx].name:"", note:(trip.notes||{})[s.idx]||""

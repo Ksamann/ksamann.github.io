@@ -1,6 +1,7 @@
 /* Banepuls: app shell, Log / Trips / More tabs, and the glue between live data, logging and export. */
 import { $, esc, hm, hms, fmt, sgn, store, toast, buzz, t, lang, setLang, dateStr, uid, isoLocal, askPersist, storageOk, APP_VERSION, COLORS, INK } from "./core.js";
-import { L, POLL_MS, loadNetwork, loadCalls, departures, fetchJourney, situations } from "./entur.js";
+import { L, POLL_MS, loadNetwork, loadCalls, departures, fetchJourney, situations, stateAt } from "./entur.js";
+import { createDetector, requestMotion, listen, sensorPrecision } from "./motion.js";
 import { V, initLive, build as buildLive, tick as tickLive, setStation, buildPicker, locate } from "./live.js";
 import { syncClock, fresh, clockState } from "./clock.js";
 import { tripState, stops, segments, totals, quality, compare, summary, platformRows, platformStats, trends, median, off } from "./model.js";
@@ -16,6 +17,7 @@ const A = {
 };
 if(!["now","log","trips","more"].includes(A.tab)) A.tab="now";
 if(A.active){ A.tab="log"; A.step="run"; } else if(A.plat){ A.tab="log"; A.step="platform"; }
+try{ const q=new URLSearchParams(location.search); if(q.get("train")){ A.tv={id:q.get("train"), d:q.get("d")||isoLocal(Date.now()).slice(0,10), to:q.get("to")||"", jr:null, err:null}; A.tab="train"; } }catch(e){}
 const content=$("#content"), sheet=$("#sheet");
 const saveItems = () => store("bp.items", A.items);
 const saveActive = () => store("bp.active", A.active);
@@ -35,7 +37,7 @@ function renderTabs(){
   document.querySelectorAll("[data-tab]").forEach(b=>{ b.setAttribute("aria-selected",b.dataset.tab===A.tab); b.querySelector("span").textContent=t({now:"tabNow",log:"tabLog",trips:"tabTrips",more:"tabMore"}[b.dataset.tab]); });
   const sub=$("#sub"); sub.hidden = A.tab!=="now";
   sub.innerHTML = [["stn","vStation"],["line","vLine"],["net","vMap"],["sl","vGraph"]].map(([k,s])=>`<button data-view="${k}" aria-pressed="${V.view===k}">${t(s)}</button>`).join("");
-  $("#title").textContent = A.tab==="now" ? "Banepuls" : t({log:"tabLog",trips:"tripsTitle",more:"moreTitle"}[A.tab]);
+  $("#title").textContent = (A.tab==="now"||A.tab==="train") ? "Banepuls" : t({log:"tabLog",trips:"tripsTitle",more:"moreTitle"}[A.tab]);
 }
 function draw(){
   clearInterval(draw.tick); sheet.hidden=true;
@@ -43,6 +45,7 @@ function draw(){
   renderTabs();
   content.classList.toggle("full", A.tab==="now" && V.view==="net");
   wantWake(A.tab==="log" && (A.step==="run"||A.step==="platform"));
+  if(A.tab==="train") return drawTrain();
   if(A.tab==="now"){ if(!L.NET) return netWait(); buildLive(); return; }
   document.documentElement.style.setProperty("--c", COLORS[(A.active&&A.active.line)||V.line]||COLORS["5"]);
   ({log:drawLog, trips:drawTrips, more:drawMore})[A.tab]();
@@ -66,6 +69,7 @@ initLive(content, sheet, {
   onView: ()=>draw(),
   onLog: (j, station)=>{ if(A.active){ go("log","run"); return; } startPrep(j, station); },
   onPing: (j, station)=>doPing(j, station),
+  onShare: j=>shareTrain(j.id, j.date, "", j.line, j.dest),
   banner: name=>sitBanner([...(L.LINESAT[name]||[])])
 });
 
@@ -200,16 +204,90 @@ function drawManual(){
 /* ---------- time study ---------- */
 function startStudy(o){
   A.active={ id:uid("S"), kind:"study", v:3, ...o, events:[], notes:{}, undos:0, clock:fresh(), startedAt:Date.now(), endedAt:null, endedBy:null };
-  A.prep=null; saveActive(); askPersist(); go("log","run"); pollJourney();
+  A.prep=null; saveActive(); askPersist(); startSensor(); go("log","run"); pollJourney();
 }
 let lastPress=0, lastPointer=0;
 function press(e){
   const wall=Date.now(); if(wall-lastPress<400) return; lastPress=wall;     // ignore accidental double taps
   const lag = e && e.timeStamp>0 ? Math.min(1000, Math.max(0, performance.now()-e.timeStamp)) : 0;
-  const now=Math.round(wall-lag), trip=A.active, st=tripState(trip);
-  trip.events.push({type:st.mode, idx:st.idx, t:now, ts:isoLocal(now+off(trip))}); saveActive(); buzz(); A.noteOpen=false;
+  addEvent(Math.round(wall-lag), "manual");
+}
+function addEvent(now, source){
+  const trip=A.active, st=tripState(trip), last=trip.events[trip.events.length-1];
+  if(last && now<=last.t) return;
+  const ev={type:st.mode, idx:st.idx, t:now, ts:isoLocal(now+off(trip))}; if(source==="sensor") ev.source="sensor";
+  trip.events.push(ev); if(SENS) SENS.sugg=null; saveActive(); buzz(); A.noteOpen=false;
   if(st.mode==="arr" && st.idx===trip.endIdx){ toast(t("arrivedEnd",trip.route[st.idx].name)); return finishStudy("auto"); }
   draw();
+}
+
+/* ---------- sensor assistance (beta) ---------- */
+let SENS=null;
+const sensorOn = () => store("bp.sensor")===true;
+async function startSensor(){
+  if(!sensorOn() || !A.active || SENS) return;
+  const ok=await requestMotion(); if(!ok){ A.sensorDenied=true; if(A.tab==="log") draw(); return; }
+  const trip=A.active; trip.sensor=trip.sensor||{events:[]}; A.sensorDenied=false;
+  const det=createDetector(ev=>onSensor(ev), {keepRaw: store("bp.sensorRaw")===true});
+  SENS={det, lis:listen(det), sugg:null};
+  if(A.tab==="log") draw();
+}
+function stopSensor(trip){ if(!SENS) return; SENS.lis.stop(); if(trip && SENS.det.raw.length){ trip.sensor=trip.sensor||{events:[]}; trip.sensor.raw=(trip.sensor.raw||[]).concat(SENS.det.raw); } SENS=null; }
+function onSensor(ev){
+  const trip=A.active; if(!trip || !SENS) return;
+  trip.sensor.events.push(ev);
+  const st=tripState(trip), last=trip.events[trip.events.length-1];
+  if(ev.type===st.mode && (!last || ev.t>last.t+1500)) SENS.sugg=ev;
+  saveActive(); if(A.tab==="log" && A.step==="run" && !A.noteOpen && !A.confirmEnd) draw();
+}
+function sensorLine(){
+  if(!sensorOn()) return "";
+  if(!SENS) return `<div class="sens"><i class="off"></i>${t("sensorOn")}: ${A.sensorDenied?t("sensorOff"):""} <button class="linkbtn" id="senson">${t("sensorEnable")}</button></div>`;
+  const sg=SENS.sugg;
+  return `<div class="sens"><i id="sdot"></i>${t("sensorOn")}: <span id="sstate">${t("sensorWait")}</span>${sg?`<span class="sugg">${esc(t("sensorSuggest", sg.type==="dep"?t("sensorDep"):t("sensorArr"), hms(sg.t+off(A.active))))}<button class="mini log" id="suse">${t("use")}</button></span>`:""}</div>`;
+}
+
+/* ---------- share a train ---------- */
+function shareUrl(id,date,to){ const u=new URL("./", location.href); u.search=""; u.hash=""; u.searchParams.set("train",id); u.searchParams.set("d",date); if(to) u.searchParams.set("to",to); return u.href; }
+async function shareTrain(id, date, to, line, dest){
+  const url=shareUrl(id,date,to), text=t("shareText",line,dest||"",to);
+  try{ if(navigator.share){ await navigator.share({title:"Banepuls", text, url}); return; } }catch(e){ if(e && e.name==="AbortError") return; }
+  try{ await navigator.clipboard.writeText(url); toast(t("linkCopied")); }catch(e){ toast(url); }
+}
+async function loadTv(){
+  clearTimeout(loadTv.t); const tv=A.tv; if(!tv) return;
+  try{ tv.jr=await fetchJourney(tv.id, tv.d); tv.err=null; }catch(e){ tv.err=e.message; }
+  if(A.tab==="train") drawTrain();
+  loadTv.t=setTimeout(loadTv, POLL_MS);
+}
+function drawTrain(){
+  clearInterval(draw.tick);
+  const tv=A.tv; if(!tv){ A.tab="now"; return draw(); }
+  if(!tv.jr){ content.innerHTML=`<div class="msg">${tv.err?`<b>${t("trainFail")}</b>`:t("trainLoading")}<a class="btn" href="./">${t("openApp")}</a></div>`; if(!tv.err && !loadTv.t) loadTv(); return; }
+  const jr=tv.jr, calls=jr.calls.filter(c=>!c.cancel), now=Date.now();
+  const j={calls:calls.map((c,i)=>({ix:i, p:i, arr:c.xArr??c.eArr, dep:c.xDep??c.eDep, aArr:c.aArr, aDep:c.aDep, cancel:false}))};
+  const s=stateAt(j,now), pos=s?Math.floor(s.pos):(now<(j.calls[0].dep||0)?0:calls.length-1);
+  const ended=!s && now>(j.calls[0].dep||0);
+  let toIx=-1; if(tv.to){ toIx=calls.findIndex((c,i)=>c.name===tv.to && i>=Math.min(pos,calls.length-1)); if(toIx<0) toIx=calls.findIndex(c=>c.name===tv.to); }
+  const status = s ? (s.wait ? t("waitingFrom",esc(calls[Math.round(s.pos)].name)) : s.at ? t("standingAt",esc(calls[Math.round(s.pos)].name)) : t("between",esc(calls[Math.floor(s.pos)].name),esc(calls[Math.ceil(s.pos)].name)))
+    : ended ? t("trainDone") : t("waitingFrom",esc(calls[0].name));
+  const dl = s ? (s.delay<60 ? t("onTime") : `+${Math.round(s.delay/60)} min`) : "";
+  let arrive="";
+  if(toIx>=0){ const c=calls[toIx], at=c.xArr??c.eArr??c.aArr, done=(c.xArr!=null && c.xArr<=now) || (at!=null && now>at+60e3 && (ended || pos>=toIx));
+    arrive=`<div class="arrive"><span class="label">${done?t("arrivedAt",esc(c.name)):t("arrivesAt",esc(c.name))}</span><b class="num">${done?hms(c.xArr??at):`${hm(at)}`}</b>${!done&&c.aArr&&Math.abs(at-c.aArr)>=60e3?`<s class="num">${hm(c.aArr)}</s>`:""}</div>`; }
+  const from = s ? (s.at ? Math.round(s.pos) : Math.ceil(s.pos)) : (ended?calls.length:0);
+  const upto = toIx>=0 ? Math.max(toIx, from) : calls.length-1, next=calls.slice(from, Math.min(calls.length, Math.max(upto+1, from+6)));
+  content.innerHTML=`<section class="screen">
+    <div class="bar"><span class="badge" style="background:${COLORS[jr.line]};color:${INK[jr.line]}">${esc(jr.line)}</span><h1>${t("towards")} ${esc((calls[Math.min(from,calls.length-1)]||{}).dest||jr.dest||calls[calls.length-1].name)}<small>${status}${dl?` · ${dl}`:""}</small></h1></div>
+    ${arrive}
+    ${next.length?`<span class="label">${t("nextStops")}</span><ol class="nextl">${next.map((c,k)=>{ const i=from+k, tt=c.xArr??c.eArr??c.xDep??c.eDep??c.aArr??c.aDep, pl=c.aArr??c.aDep;
+      return `<li class="${i===toIx?"to":""}"><i></i><span>${esc(c.name)}</span>${pl&&Math.abs(tt-pl)>=60e3?`<s class="num">${hm(pl)}</s>`:"<s></s>"}<b class="num">${hm(tt)}</b></li>`; }).join("")}</ol>`:""}
+    <div class="btnrow"><button class="btn" id="tvshare">↗ ${t("shareTrain")}</button><button class="btn primary" id="tvopen">${t("openApp")}</button></div>
+    <p class="hint">${t("live")} · Entur · ${hms(jr.fetchedAt)}</p>
+  </section>`;
+  $("#tvshare").onclick=()=>shareTrain(tv.id, tv.d, tv.to, jr.line, jr.dest);
+  $("#tvopen").onclick=()=>{ clearTimeout(loadTv.t); loadTv.t=null; A.tv=null; try{ history.replaceState(null,"",location.pathname); }catch(e){} go(A.active?"log":"now", A.active?"run":undefined); };
+  draw.tick=setInterval(()=>{ if(A.tab==="train" && !document.hidden) drawTrain(); }, 5000);
 }
 function drawRun(){
   const trip=A.active, r=trip.route, st=tripState(trip), calls=trip.rt&&trip.rt.calls;
@@ -218,13 +296,14 @@ function drawRun(){
   const rows=compare(trip).reverse();
   content.innerHTML=`<section class="run">
     <div class="panel">
-      <div class="bar"><span class="badge" style="background:${COLORS[trip.line]};color:${INK[trip.line]}">${esc(trip.line)}</span><h1>${t("towards")} ${esc(r[trip.endIdx].name)}${trip.journey?`<small>${t("journeyId")} ${hm(calls&&calls[trip.startIdx]?(calls[trip.startIdx].aDep??0):trip.startedAt)} · ${esc(r[trip.startIdx].name)}</small>`:""}</h1><button class="iconbtn" id="end">${t("finish")}</button></div>
+      <div class="bar"><span class="badge" style="background:${COLORS[trip.line]};color:${INK[trip.line]}">${esc(trip.line)}</span><h1>${t("towards")} ${esc(r[trip.endIdx].name)}${trip.journey?`<small>${t("journeyId")} ${hm(calls&&calls[trip.startIdx]?(calls[trip.startIdx].aDep??0):trip.startedAt)} · ${esc(r[trip.startIdx].name)}</small>`:""}</h1>${trip.journey?`<button class="iconbtn" id="shr" aria-label="${t("shareTrain")}">↗</button>`:""}<button class="iconbtn" id="end">${t("finish")}</button></div>
       ${A.confirmEnd?`<div class="confirm"><b>${t("finishQ")}</b><span class="hint">${t("finishHint")}</span><div class="btnrow"><button class="btn" id="no">${t("keepLogging")}</button><button class="btn primary" id="yes">${t("finishTrip")}</button></div></div>`:""}
       <div class="now"><div class="where"><span class="label">${st.mode==="dep"?(st.since?t("at"):t("readyAt")):t("nextL")}</span><b>${esc(r[st.idx].name)}</b></div>
         <span class="timer num" id="timer">${st.since?"0:00<span class=\"ds\">.0</span>":"–:––"}</span>
         <span class="what">${st.since?(st.mode==="dep"?t("dwell"):t("run")):t("waiting")}${exp?`<br>${t("rtExpect",st.mode==="dep"?t("rtDep"):t("rtArr"),hms(exp))}`:""}</span></div>
       <button class="big ${st.mode}" id="press"><span class="verb">${st.mode==="dep"?t("depart"):t("arrive")}</span><span class="sub">${st.mode==="dep"?t("from"):t("toAt")} ${esc(r[st.idx].name)}</span></button>
       <div class="tools"><button class="tool" id="undo" ${trip.events.length?"":"disabled"}>${t("undo")}</button><span class="progress num">${t("progress",pos,total)}${trip.clock?` · ⏱ ±${(Math.max(trip.clock.err,50)/1000).toFixed(1)} s`:""}</span><button class="tool" id="note">${t("note")}</button></div>
+      ${sensorLine()}
       ${A.noteOpen?`<div class="notebox"><label class="label" for="nt">${esc(t("noteFor",r[noteIdx].name))}</label><textarea id="nt">${esc(trip.notes[noteIdx]||"")}</textarea><div class="btnrow"><button class="btn" id="ntc">${t("cancel")}</button><button class="btn primary" id="nts">${t("saveNote")}</button></div></div>`:""}
     </div>
     ${rows.length?`<div class="tblwrap"><table class="tri"><thead><tr><th>${t("colStation")}</th><th>${t("colPlan")}</th><th>${t("colRt")}</th><th>${t("colMe")}</th><th>${t("colD")}</th></tr></thead><tbody>${rows.map(triRow).join("")}</tbody></table></div>
@@ -239,7 +318,11 @@ function drawRun(){
     $("#nts").onclick=()=>{ const v=$("#nt").value.trim(); if(v) trip.notes[noteIdx]=v; else delete trip.notes[noteIdx]; saveActive(); A.noteOpen=false; toast(t("noteSaved")); draw(); }; }
   $("#end").onclick=()=>{ A.confirmEnd=true; draw(); };
   if(A.confirmEnd){ $("#no").onclick=()=>{ A.confirmEnd=false; draw(); }; $("#yes").onclick=()=>finishStudy("manual"); }
-  const upd=()=>{ if(!st.since) return; const s=fmt(Date.now()-st.since), el=$("#timer"); if(el) el.innerHTML=s.slice(0,-2)+`<span class="ds">${s.slice(-2)}</span>`; };
+  const sh=$("#shr"); if(sh) sh.onclick=()=>shareTrain(trip.journey.id, trip.journey.date, r[trip.endIdx].name, trip.line, trip.dest);
+  const so=$("#senson"); if(so) so.onclick=()=>startSensor();
+  const su=$("#suse"); if(su) su.onclick=()=>{ const sg=SENS&&SENS.sugg; if(sg) addEvent(sg.t,"sensor"); };
+  const upd=()=>{ const ss=$("#sstate"); if(ss&&SENS){ const k=SENS.det.state; ss.textContent=k==="still"?t("sensorStill"):k==="moving"?t("sensorMoving"):t("sensorWait"); const d=$("#sdot"); if(d) d.className=k; }
+    if(!st.since) return; const s=fmt(Date.now()-st.since), el=$("#timer"); if(el) el.innerHTML=s.slice(0,-2)+`<span class="ds">${s.slice(-2)}</span>`; };
   upd(); draw.tick=setInterval(upd,100);
 }
 function triRow(r){
@@ -249,7 +332,7 @@ function triRow(r){
     <td class="d ${d>0?"pos":d<0?"neg":""}">${d==null?"–":sgn(d,1)+" s"}</td></tr>`;
 }
 function finishStudy(how){
-  const trip=A.active; trip.endedAt=Date.now(); trip.endedBy=how;
+  const trip=A.active; trip.endedAt=Date.now(); trip.endedBy=how; stopSensor(trip);
   A.items=[trip, ...A.items.filter(x=>x.id!==trip.id)]; saveItems();
   A.active=null; saveActive(); A.viewId=trip.id; A.justFinished=trip.id; A.confirmEnd=false;
   go("log","result"); finalRealtime(trip.id);
@@ -296,6 +379,7 @@ function drawResult(){
   else { if(s.n) finds.push(s.max<=5 ? t("fGood",Math.max(1,Math.round(s.max))) : t("fBad",Math.round(s.max),esc(s.maxAt)));
     if(s.vsPlan!=null && Math.abs(s.vsPlan)>=30e3) finds.push(s.vsPlan>0 ? t("fPlusPlan",(s.vsPlan/60e3).toFixed(1).replace(".",lang==="no"?",":"."), s.worstLeg&&s.worstLeg.loss>20e3?esc(`${s.worstLeg.from}–${s.worstLeg.to}`):"") : t("fMinusPlan",(-s.vsPlan/60e3).toFixed(1).replace(".",lang==="no"?",":".")));
     if(s.copies) finds.push(t("fCopies",s.copies)); }
+  const sp=sensorPrecision(x); if(sp && sp.matched) finds.push(t("sensorStats",sp.medianAbs.toFixed(1),sp.matched,sp.maxAbs.toFixed(1),sp.missed));
   const rtState = !x.journey ? "" : x.rtFinal==="late" ? t("rtLate") : x.rtFinal ? t("rtFetched",hm(x.rtFinal)) : t("rtPending");
   content.innerHTML=`<section class="screen">
     <div class="bar"><span class="badge" style="background:${COLORS[x.line]};color:${INK[x.line]}">${esc(x.line)}</span><h1>${esc(x.route[x.startIdx].name)} → ${esc(tt.endName)}<small>${dateStr(x.startedAt)} ${hm(x.startedAt)} · ${t("legs",tt.legs)}${rtState?` · ${rtState}`:""}</small></h1></div>
@@ -307,10 +391,12 @@ function drawResult(){
     <p class="hint">${t("deltaHelp")}</p>
     <div class="tblwrap"><table class="segs"><thead><tr><th>${t("colStation")}</th><th class="n">${t("dwell")}</th><th class="n">${t("run")}</th></tr></thead><tbody>${sg.map(g=>`<tr><td>${esc(g.station)}${g.note?` <span title="${esc(g.note)}">✎</span>`:""}</td><td class="n">${g.dwell!=null?fmt(g.dwell):"–"}</td><td class="n">${g.run!=null?fmt(g.run):"–"}</td></tr>`).join("")}</tbody></table></div>
     ${sendBlock(x,to)}
+    ${x.journey && Date.now()-x.startedAt<20*3600e3?`<button class="btn" id="tshare">↗ ${t("shareTrain")}</button>`:""}
     ${A.justFinished===x.id?`<button class="linkbtn" id="resume">${t("resume")}</button>`:""}
   </section>`;
   bindSend(x);
   const rs=$("#resume"); if(rs) rs.onclick=()=>resumeStudy(x.id);
+  const ts=$("#tshare"); if(ts) ts.onclick=()=>shareTrain(x.journey.id, x.journey.date, segments(x).slice(-1)[0]?.station||"", x.line, x.dest);
 }
 function sendBlock(x,to){
   return `${to?`<button class="cta" id="send">${x.sentAt?t("sendAgain"):t("sendAnalysis")}</button><p class="hint">${x.sentAt?"✓ "+esc(t("sentOn",dateStr(x.sentAt)+" "+hm(x.sentAt))):esc(to)}</p>`:`<p class="hint">${t("noAddress")}</p>`}
@@ -490,11 +576,14 @@ function drawMore(){
     <div class="set">
       <div class="r"><div><b>${t("sClock")}</b><span>${t("sClockD")}</span><span>${A.syncing?t("clockSyncing"):c?t("clockSynced",c.offset,Math.max(c.err,50)):t("clockNone")}</span></div><button class="btn" id="sync">${t("syncNow")}</button></div>
       <div class="r"><div><b>${t("sLoc")}</b><span>${t("sLocD")}</span></div><button class="btn" id="loc" aria-pressed="${store("bp.loc")!==false}">${store("bp.loc")!==false?t("on"):t("off")}</button></div>
+      <div class="r"><div><b>${t("sSensor")}</b><span>${t("sSensorD")}</span></div><button class="btn" id="sens" aria-pressed="${sensorOn()}">${sensorOn()?t("on"):t("off")}</button></div>
+      ${sensorOn()?`<div class="r"><div><b>${t("sRaw")}</b><span>${t("sRawD")}</span></div><button class="btn" id="sraw" aria-pressed="${store("bp.sensorRaw")===true}">${store("bp.sensorRaw")===true?t("on"):t("off")}</button></div>`:""}
     </div>
     <span class="label">${t("sOther")}</span>
     <div class="set">
       <div class="r"><div><b>${t("sLang")}</b></div><div class="lang"><button data-lang="en" aria-pressed="${lang==="en"}">EN</button><button data-lang="no" aria-pressed="${lang==="no"}">NO</button></div></div>
       <div class="r"><div><b>${t("sGuide")}</b></div><a class="btn" href="guide.html">›</a></div>
+      <div class="r"><div><b>${t("sAnalysis")}</b><span>${t("sAnalysisD")}</span></div><a class="btn" href="analyse.html">›</a></div>
       <div><b>${t("sPrivacy")}</b><span>${t("sPrivacyD")}</span></div>
       <div class="r"><div><b>${t("sOld")}</b></div><div class="btnrow"><a class="btn" href="../linjeblikk.html">Linjeblikk</a><a class="btn" href="../tbane.html">T-bane logger</a></div></div>
     </div>
@@ -505,6 +594,8 @@ function drawMore(){
   $("#role").onchange=e=>{ store("bp.role", e.target.value||null); toast(t("saved")); };
   $("#sync").onclick=runSync;
   $("#loc").onclick=()=>{ store("bp.loc", store("bp.loc")===false); draw(); };
+  $("#sens").onclick=async()=>{ const on=!sensorOn(); store("bp.sensor", on); if(on && A.active) await startSensor(); if(!on) stopSensor(A.active); draw(); };
+  const sr=$("#sraw"); if(sr) sr.onclick=()=>{ store("bp.sensorRaw", store("bp.sensorRaw")!==true); draw(); };
   content.querySelectorAll("[data-lang]").forEach(b=>b.onclick=()=>{ setLang(b.dataset.lang); draw(); });
 }
 
@@ -532,6 +623,7 @@ document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==
 
 async function boot(){
   draw();
+  if(A.tv) loadTv();
   try{ await loadNetwork(); }catch(e){ L.lastErr=e; draw(); return; }
   if(!L.NET.lines[V.line]) V.line=Object.keys(L.NET.lines)[0];
   draw(); poll(); loadSits(); setInterval(loadSits, 5*60e3);

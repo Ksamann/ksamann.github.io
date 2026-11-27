@@ -294,6 +294,24 @@ table{border-collapse:collapse;width:100%}
 .lang{display:flex;background:var(--bg);border-radius:10px;padding:3px;gap:2px}
 .lang button{min-width:42px;height:38px;border-radius:8px;font-size:13px;font-weight:700;color:var(--muted)}
 .lang button[aria-pressed="true"]{background:var(--surface-2);color:var(--fg)}
+.sacts .sbtn.sh{flex:none;width:46px;font-size:18px}
+.sens{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.sens>i{width:9px;height:9px;border-radius:50%;background:var(--dim);flex:none}
+.sens>i.still{background:var(--late)} .sens>i.moving{background:var(--ok)} .sens>i.off{background:var(--bad)}
+.sugg{display:inline-flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--c);border-radius:999px;padding:3px 4px 3px 10px;color:var(--fg);font-weight:600}
+.arrive{background:var(--surface);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.arrive b{font:700 44px var(--f-mono);line-height:1;letter-spacing:-.02em}
+.arrive s{color:var(--dim);font:500 14px var(--f-mono)}
+.nextl{list-style:none;margin:0;padding:0}
+.nextl li{display:grid;grid-template-columns:20px 1fr auto auto;gap:10px;align-items:center;min-height:40px;position:relative}
+.nextl li::before{content:"";position:absolute;left:8px;top:0;bottom:0;width:4px;background:var(--c);opacity:.6}
+.nextl li:first-child::before{top:50%} .nextl li:last-child::before{bottom:50%}
+.nextl li i{width:14px;height:14px;border-radius:50%;background:var(--bg);border:3px solid var(--c);position:relative;z-index:1;justify-self:center}
+.nextl li span{font-family:var(--f-display);font-weight:600;font-size:18px}
+.nextl li s{color:var(--dim);font:500 12px var(--f-mono)}
+.nextl li b{font:700 16px var(--f-mono)}
+.nextl li.to i{background:var(--c);border-color:var(--fg);width:18px;height:18px}
+.nextl li.to span{font-weight:800}
 .toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:11px 15px;border-radius:12px;font-weight:600;font-size:14px;max-width:calc(100% - 32px);z-index:20;box-shadow:0 8px 30px rgba(0,0,0,.45)}
 @media (orientation:landscape) and (max-height:520px){
   .appbar{padding-block:4px 2px} .appbar h1{font-size:19px}

@@ -1,6 +1,7 @@
 /* Export (CSV, JSON v3), sending for analysis (mailto with the data in the body, or
    shared files when too long) and import (Banepuls files and T-bane logger files). */
-import { APP_VERSION, isoLocal, pad, store, t, lang } from "./core.js";
+import { APP_VERSION, isoLocal, pad, store, t, lang, deviceId } from "./core.js";
+import { sensorPrecision } from "./motion.js";
 import { segments, compare, summary, quality, platformRows, platformStats, off } from "./model.js";
 
 const iso = v => v==null ? "" : isoLocal(v);
@@ -11,7 +12,7 @@ export const profile = () => ({ observer:(store("bp.name")||"").trim(), role:sto
 function derived(x){
   if(x.kind==="study"){
     const s=summary(x);
-    return { quality:quality(x), segments:segments(x).map(g=>({seq:g.seq, station:g.station, stop_id:g.stopId, arrival:iso(g.arr)||null, departure:iso(g.dep)||null,
+    return { quality:quality(x), sensor_precision:sensorPrecision(x), segments:segments(x).map(g=>({seq:g.seq, station:g.station, stop_id:g.stopId, arrival:iso(g.arr)||null, departure:iso(g.dep)||null, arrival_source:g.arrSrc||null, departure_source:g.depSrc||null,
         dwell_s:r1(g.dwell), to_station:g.to||null, run_s:r1(g.run), note:g.note||null})),
       comparison:s.rows.map(r=>({station:r.station, event:r.kind==="arr"?"arrival":"departure", plan:iso(r.plan)||null, realtime:r.rt&&r.rt.v!=null?iso(r.rt.v):null,
         realtime_is_actual:!!(r.rt&&r.rt.actual), realtime_equals_plan:!!(r.rt&&r.rt.copy), measured:iso(r.me), delta_s:r.delta})),
@@ -25,19 +26,19 @@ function derived(x){
 }
 export function toJSON(items){
   const p=profile();
-  return JSON.stringify({ app:"banepuls", version:3, app_version:APP_VERSION, exported_at:isoLocal(Date.now()), observer:p.observer||null, role:p.role||null,
+  return JSON.stringify({ app:"banepuls", version:3, app_version:APP_VERSION, exported_at:isoLocal(Date.now()), device_id:deviceId(), observer:p.observer||null, role:p.role||null,
     items: items.map(x=>({...x, derived:derived(x)})) }, null, 2);
 }
 
 /* ---------- CSV: one row per measured stop (study), per train (platform) or per ping ---------- */
 const COLS=["kind","id","date","line","direction","journey_id","seq","station","stop_id","plan_arrival","plan_departure","rt_arrival","rt_departure",
-  "rt_is_actual","rt_equals_plan","measured_arrival","measured_departure","delta_arrival_s","delta_departure_s","dwell_s","run_s","headway_s","to_station","note","clock_offset_ms","observer","role"];
+  "rt_is_actual","rt_equals_plan","measured_arrival","measured_departure","delta_arrival_s","delta_departure_s","dwell_s","run_s","headway_s","to_station","note","clock_offset_ms","observer","role","arrival_source","departure_source"];
 export function toCSV(items){
   const sep = lang==="no" ? ";" : ",", dec = lang==="no" ? "," : ".";
   const num = v => v==null ? "" : String(v).replace(".",dec);
   const p=profile(), rows=[];
   for(const x of items){
-    const base={kind:x.kind, id:x.id, line:x.line, direction:x.dest||x.towards||"", journey_id:(x.journey&&x.journey.id)||x.jid||"", clock_offset_ms:x.clock?x.clock.offset:"", observer:p.observer, role:p.role};
+    const base={kind:x.kind, id:x.id, line:x.line, direction:x.dest||x.towards||"", journey_id:(x.journey&&x.journey.id)||x.jid||"", clock_offset_ms:x.clock?x.clock.offset:"", observer:x._obs??p.observer, role:x._role??p.role};
     if(x.kind==="study"){
       const cmp=compare(x), calls=x.rt&&x.rt.calls;
       segments(x).forEach(g=>{
@@ -46,7 +47,7 @@ export function toCSV(items){
         rows.push({...base, date:iso(x.startedAt).slice(0,10), seq:g.seq, station:g.station, stop_id:g.stopId, plan_arrival:iso(c&&c.aArr), plan_departure:iso(c&&c.aDep),
           rt_arrival:rv(ra), rt_departure:rv(rd), rt_is_actual:(rd||ra)&&(rd||ra).rt?String(!!(rd||ra).rt.actual):"", rt_equals_plan:(rd||ra)&&(rd||ra).rt?String(!!(rd||ra).rt.copy):"",
           measured_arrival:iso(g.arr), measured_departure:iso(g.dep), delta_arrival_s:num(ra&&ra.delta), delta_departure_s:num(rd&&rd.delta),
-          dwell_s:num(r1(g.dwell)), run_s:num(r1(g.run)), to_station:g.to, note:g.note});
+          dwell_s:num(r1(g.dwell)), run_s:num(r1(g.run)), to_station:g.to, note:g.note, arrival_source:g.arr!=null?g.arrSrc:"", departure_source:g.dep!=null?g.depSrc:""});
       });
     } else if(x.kind==="platform"){
       platformRows(x).forEach((r,i)=>rows.push({...base, line:r.line, direction:r.dest, journey_id:r.jid||"", date:iso(x.startedAt).slice(0,10), seq:i+1, station:x.station,
@@ -116,12 +117,14 @@ function fromTbane(o){
 const validItem = x => x && typeof x==="object" && typeof x.id==="string" && ["study","platform","ping"].includes(x.kind)
   && (x.kind!=="study" || (Array.isArray(x.route) && Array.isArray(x.events)))
   && (x.kind!=="platform" || Array.isArray(x.recs));
-export async function readImport(files){
+/* keepMeta: tag each item with the sender's device, name and role (used by the analysis tool). */
+export async function readImport(files, keepMeta=false){
   const got=[]; let bad=0;
   for(const file of files){
     let d=null; try{ d=JSON.parse(await file.text()); }catch(e){}
-    if(d && d.app==="banepuls" && Array.isArray(d.items)) d.items.forEach(x=>{ if(validItem(x)){ const {derived:_, ...raw}=x; got.push({...raw, exportedAt:raw.exportedAt||Date.now()}); } else bad++; });
-    else if(d && d.app==="tbane-tidslogger"){ (d.trip?[d.trip]:Array.isArray(d.trips)?d.trips:[]).forEach(o=>{ const x=fromTbane(o); if(x) got.push(x); else bad++; }); }
+    const meta = keepMeta && d ? {_dev:d.device_id||null, _obs:d.observer||"", _role:d.role||"", _src:file.name||""} : {};
+    if(d && d.app==="banepuls" && Array.isArray(d.items)) d.items.forEach(x=>{ if(validItem(x)){ const {derived:_, ...raw}=x; got.push({...raw, exportedAt:raw.exportedAt||Date.now(), ...meta}); } else bad++; });
+    else if(d && d.app==="tbane-tidslogger"){ (d.trip?[d.trip]:Array.isArray(d.trips)?d.trips:[]).forEach(o=>{ const x=fromTbane(o); if(x) got.push(keepMeta?{...x, _dev:null, _obs:String(o.observer||""), _role:"", _src:file.name||""}:x); else bad++; }); }
     else bad++;
   }
   return {items:got, bad};

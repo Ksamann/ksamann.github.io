@@ -90,7 +90,7 @@ function drawSheet(now){
       <div><small>${endKnown?t("arrives"):t("terminus")}</small><b>${endKnown?hm(last.arr):esc(j.dest?j.dest.split(" via ")[0]:"–")}</b><em>${endKnown?esc(lastName):""}</em></div>
     </div>
     <ol>${nxt.map(c=>`<li><span>${esc(st[c.ix].name)}</span>${c.aArr&&Math.abs((c.arr||0)-c.aArr)>=60e3?`<s>${hm(c.aArr)}</s>`:"<s></s>"}<span class="mono num">${hm(c.arr||c.dep)}</span></li>`).join("")||`<li><span>${t("lastStation")}</span><s></s><span></span></li>`}</ol>
-    <div class="sacts">${other}${canLog?`<button class="logbtn" data-logj="${esc(j.id)}" data-logs="${esc(st[ix].name)}" style="--c:${COLORS[j.line]}">${t("logFrom",esc(st[ix].name))}</button>`:""}</div>`;
+    <div class="sacts">${other}<button class="sbtn sh" data-sharej="${esc(j.id)}" aria-label="${t("shareTrain")}">↗</button>${canLog?`<button class="logbtn" data-logj="${esc(j.id)}" data-logs="${esc(st[ix].name)}" style="--c:${COLORS[j.line]}">${t("logFrom",esc(st[ix].name))}</button>`:""}</div>`;
   if(sheet._html!==html){ sheet.innerHTML=html; sheet._html=html; }
   sheet.hidden=false;
 }
@@ -348,6 +348,7 @@ function bind(){
   sheet.addEventListener("pointerdown",e=>{ if(e.target.closest(".x")) closeSheet(); });
   sheet.addEventListener("click",e=>{
     const lg=e.target.closest("[data-logj]"); if(lg){ const j=L.JOURNEYS.find(x=>x.id===lg.dataset.logj); closeSheet(); if(j) hooks.onLog(j, lg.dataset.logs); return; }
+    const sh=e.target.closest("[data-sharej]"); if(sh){ const j=L.JOURNEYS.find(x=>x.id===sh.dataset.sharej); if(j) hooks.onShare(j); return; }
     const b=e.target.closest("[data-show]"); if(!b) return;
     const id=V.sel, j=L.JOURNEYS.find(x=>x.id===id); if(!j) return;
     V.view=b.dataset.show; store("bp.view",V.view); if(V.view==="line"){ V.line=j.line; store("bp.line",V.line); }
