@@ -1,10 +1,10 @@
 /* Service worker for Banepuls. Serves the app from the cache first so it opens with no
    signal, and refreshes the cache in the background. Realtime data (api.entur.io) and the
    clock-sync requests (HEAD with ?cs=) always go to the network. Bump VERSION when the file list changes. */
-const VERSION = "banepuls-v1";
+const VERSION = "banepuls-v2";
 const FILES = [
-  "./", "index.html", "guide.html", "manifest.webmanifest", "icon.svg", "icon-180.png", "icon-192.png", "icon-512.png",
-  "js/app.js", "js/core.js", "js/entur.js", "js/live.js", "js/clock.js", "js/model.js", "js/export.js",
+  "./", "index.html", "guide.html", "analyse.html", "manifest.webmanifest", "icon.svg", "icon-180.png", "icon-192.png", "icon-512.png",
+  "js/app.js", "js/core.js", "js/entur.js", "js/live.js", "js/clock.js", "js/model.js", "js/export.js", "js/motion.js", "js/analyse.js",
   "../fonts/fonts.css", "../fonts/barlow-400.woff2", "../fonts/barlow-500.woff2", "../fonts/barlow-600.woff2",
   "../fonts/barlow-semi-condensed-500.woff2", "../fonts/barlow-semi-condensed-600.woff2", "../fonts/barlow-semi-condensed-700.woff2",
   "../fonts/barlow-semi-condensed-800.woff2", "../fonts/jetbrains-mono.woff2"

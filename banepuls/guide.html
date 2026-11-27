@@ -80,8 +80,11 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
       <li><a href="#result">Reading the result</a></li>
       <li><a href="#platform">Platform mode</a></li>
       <li><a href="#ping">Ping</a></li>
+      <li><a href="#share">Sharing a train</a></li>
+      <li><a href="#sensor">Sensor assistance (beta)</a></li>
       <li><a href="#trips">Trips and trends</a></li>
       <li><a href="#send">Sending data for analysis</a></li>
+      <li><a href="#analysis">Analysis tool</a></li>
       <li><a href="#data">Data formats</a></li>
       <li><a href="#tips">Tips</a></li>
     </ol>
@@ -142,14 +145,30 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
     <li>Afterwards you can say how it went: <b>On time</b>, <b>Delayed</b> or <b>Crowded</b>.</li>
   </ul>
 
-  <h2 id="trips"><span class="n">7</span>Trips and trends</h2>
+  <h2 id="share"><span class="n">7</span>Sharing a train</h2>
+  <ul>
+    <li>Tap <span class="btn">↗</span> during a time study, on a train's details, or on a result to share a link to that train.</li>
+    <li>Whoever opens the link sees where the train is now, the next stops and, during a time study, when it arrives at your end station. No account or app needed.</li>
+    <li>Trains can only be followed on the day they run.</li>
+  </ul>
+
+  <h2 id="sensor"><span class="n">8</span>Sensor assistance (beta)</h2>
+  <ul>
+    <li>Turn it on under <span class="btn">More</span> → <b>Sensor assistance</b>. On iPhone you are asked to allow motion access when you start a time study.</li>
+    <li>The accelerometer notices when the train starts moving and when it has stopped. It then shows a suggestion under the button, for example <b>Sensor: departure 12:03:14</b>. Tap <span class="btn">Use</span> to log that time, or just tap the big button yourself.</li>
+    <li>Your own taps are always the reference. Sensor detections are stored separately, and the result shows how closely they matched your taps.</li>
+    <li>Keep the phone still (in your hand or on your lap) for best results. Walking or handling the phone is ignored.</li>
+    <li><b>Save raw sensor data</b> stores a compact signal with the trip for calibration. It makes the JSON file larger.</li>
+  </ul>
+
+  <h2 id="trips"><span class="n">9</span>Trips and trends</h2>
   <ul>
     <li>All time studies, platform sessions and pings are stored on the phone, newest first. Tap one to see its result again.</li>
     <li><b>My trends</b> shows the median running time on the legs you have measured most, against the timetable, and how far realtime has been from your measurements on average.</li>
     <li><span class="btn">Import</span> reads JSON files from Banepuls or the T-bane logger, for example to move data to a new phone.</li>
   </ul>
 
-  <h2 id="send"><span class="n">8</span>Sending data for analysis</h2>
+  <h2 id="send"><span class="n">10</span>Sending data for analysis</h2>
   <ul>
     <li>Data never leaves the phone unless you send or share it. There is no account and no tracking.</li>
     <li>To send to someone who collects data, add their address under <span class="btn">More</span> → <b>Analysis address</b>, or open the invitation link you were given (it fills in the address).</li>
@@ -158,7 +177,16 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
     <li><span class="btn">Share</span>, <span class="btn">CSV</span> and <span class="btn">JSON</span> give you the files directly.</li>
   </ul>
 
-  <h2 id="data"><span class="n">9</span>Data formats</h2>
+  <h2 id="analysis"><span class="n">11</span>Analysis tool</h2>
+  <ul>
+    <li>For whoever receives data: open <a href="analyse.html">the analysis tool</a> (also under <span class="btn">More</span>).</li>
+    <li>Add Banepuls or T-bane logger JSON files, saved emails (.eml, .txt), or paste the text of emails sent with <b>Send for analysis</b>. Many at once is fine; duplicates are skipped.</li>
+    <li>Views: <b>Overview</b>, <b>Running times</b> per leg against the timetable, <b>Dwell times</b> per station, <b>Realtime accuracy</b> per station, <b>Double measurements</b> (the same departure timed by two people) and <b>Headways</b> from platform mode.</li>
+    <li>Filter by line, time band, role and dates, and download the table or all data as CSV.</li>
+    <li>Nothing is uploaded. The combined data is kept in this browser until you press <b>Clear</b>.</li>
+  </ul>
+
+  <h2 id="data"><span class="n">12</span>Data formats</h2>
   <p>The CSV has one row per measured stop (time study), per train (platform) or per ping. The most important columns:</p>
   <div class="tblwrap"><table>
     <thead><tr><th>Column</th><th>Content</th></tr></thead>
@@ -169,12 +197,13 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
       <tr><td><code>measured_arrival</code>, <code>measured_departure</code></td><td>Your taps, corrected with the clock offset, with milliseconds and time zone</td></tr>
       <tr><td><code>delta_arrival_s</code>, <code>delta_departure_s</code></td><td>Measured minus realtime, in seconds</td></tr>
       <tr><td><code>dwell_s</code>, <code>run_s</code>, <code>headway_s</code></td><td>Dwell, running time to the next stop, and headway (platform mode)</td></tr>
+      <tr><td><code>arrival_source</code>, <code>departure_source</code></td><td><code>manual</code>, or <code>sensor</code> when a sensor suggestion was used</td></tr>
       <tr><td><code>clock_offset_ms</code></td><td>The correction applied: server time minus phone time</td></tr>
     </tbody>
   </table></div>
   <p>The JSON file (version 3) has the raw taps with the phone's own clock, the realtime snapshot, the clock sync and all derived values. In English the CSV uses commas and decimal points; in Norwegian semicolons and decimal commas.</p>
 
-  <h2 id="tips"><span class="n">10</span>Tips</h2>
+  <h2 id="tips"><span class="n">13</span>Tips</h2>
   <ul>
     <li><b>Use the same rule every time</b>: first wheel movement for departure, full stop for arrival.</li>
     <li><b>Underground with no signal</b> you can keep logging; realtime is fetched when the connection returns, as long as it is within the hour.</li>

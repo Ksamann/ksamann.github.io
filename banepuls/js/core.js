@@ -1,5 +1,5 @@
 /* Shared helpers, local storage and UI strings (English default, Norwegian). */
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "1.1.0";
 export const COLORS = {"1":"#009cdc","2":"#ea5b0b","3":"#a683a5","4":"#3d6fd1","5":"#3aaa35"};
 export const INK = {"1":"#06131a","2":"#1a0a02","3":"#170f17","4":"#ffffff","5":"#061405"};
 
@@ -21,6 +21,7 @@ export const uid = p => p + Date.now().toString(36).toUpperCase() + Math.random(
 
 /* localStorage: store(k) reads, store(k,v) writes, store(k,null) removes. Never throws. */
 export let storageOk = true;
+export function deviceId(){ let d=store("bp.device"); if(!d){ d="D"+Math.random().toString(36).slice(2,10).toUpperCase(); store("bp.device",d); } return d; }
 export function store(k, v){
   try{
     if(v===undefined){ const s=localStorage.getItem(k); return s==null ? null : JSON.parse(s); }
@@ -128,7 +129,19 @@ en:{
   sOld:"The original apps", sVersion:v=>`Banepuls ${v} · realtime: Entur`,
   saved:"Saved",
   // situations
-  sitTitle:"Service messages"
+  sitTitle:"Service messages",
+  // share & train view
+  shareTrain:"Share train", linkCopied:"Link copied", trainLoading:"Fetching the train…", trainFail:"Couldn't find this train. The link may be old: trains can only be followed on the day they run.",
+  arrivesAt:n=>`Arrives at ${n}`, arrivedAt:n=>`Arrived at ${n}`, approx:"about", openApp:"Open Banepuls", nextStops:"Next stops", trainDone:"This train has finished its trip.",
+  shareText:(l,d,to)=>`Follow my train: line ${l} towards ${d}`+(to?`, getting off at ${to}`:""),
+  // sensor
+  sSensor:"Sensor assistance (beta)", sSensorD:"The accelerometer suggests departure and arrival times. Your own taps are always kept as the reference.",
+  sRaw:"Save raw sensor data", sRawD:"For calibration. About 100 kB per half hour, included in JSON exports.",
+  sensorOn:"Sensor", sensorStill:"standing", sensorMoving:"moving", sensorWait:"waiting for data", sensorOff:"no access", sensorEnable:"Enable sensor",
+  sensorSuggest:(k,tm)=>`Sensor: ${k} ${tm}`, use:"Use", sensorDep:"departure", sensorArr:"arrival",
+  kSensor:"Sensor vs your taps (median)", sensorStats:(m,n,x,mi)=>`Sensor matched ${n} of your taps: median ${m} s, worst ${x} s. ${mi} taps without a sensor event.`,
+  // analysis
+  sAnalysis:"Analysis tool", sAnalysisD:"For whoever collects data: combine and analyse files and emails from many people. Runs in the browser; nothing is uploaded."
 },
 no:{
   tabNow:"Nå", tabLog:"Logg", tabTrips:"Turer", tabMore:"Mer",
@@ -203,5 +216,14 @@ no:{
   sOther:"Annet", sLang:"Språk", sGuide:"Brukerhåndbok", sPrivacy:"Personvern", sPrivacyD:"Ingen konto og ingen sporing. Data forlater telefonen bare når du sender eller deler dem. Sanntid kommer fra Enturs åpne API.",
   sOld:"De opprinnelige appene", sVersion:v=>`Banepuls ${v} · sanntid: Entur`,
   saved:"Lagret",
-  sitTitle:"Driftsmeldinger"
+  sitTitle:"Driftsmeldinger",
+  shareTrain:"Del toget", linkCopied:"Lenken er kopiert", trainLoading:"Henter toget …", trainFail:"Fant ikke toget. Lenken kan være gammel: tog kan bare følges samme dag som de går.",
+  arrivesAt:n=>`Fremme på ${n}`, arrivedAt:n=>`Kom frem til ${n}`, approx:"ca.", openApp:"Åpne Banepuls", nextStops:"Neste stopp", trainDone:"Dette toget har kjørt ferdig.",
+  shareText:(l,d,to)=>`Følg toget mitt: linje ${l} mot ${d}`+(to?`, jeg går av på ${to}`:""),
+  sSensor:"Sensorassistanse (beta)", sSensorD:"Akselerometeret foreslår tider for avgang og ankomst. Dine egne trykk beholdes alltid som fasit.",
+  sRaw:"Lagre rå sensordata", sRawD:"For kalibrering. Cirka 100 kB per halvtime, følger med i JSON-eksport.",
+  sensorOn:"Sensor", sensorStill:"står stille", sensorMoving:"i bevegelse", sensorWait:"venter på data", sensorOff:"ingen tilgang", sensorEnable:"Slå på sensor",
+  sensorSuggest:(k,tm)=>`Sensor: ${k} ${tm}`, use:"Bruk", sensorDep:"avgang", sensorArr:"ankomst",
+  kSensor:"Sensor mot dine trykk (median)", sensorStats:(m,n,x,mi)=>`Sensoren traff ${n} av trykkene dine: median ${m} s, verst ${x} s. ${mi} trykk uten sensorhendelse.`,
+  sAnalysis:"Analyseverktøy", sAnalysisD:"For den som samler inn data: slå sammen og analyser filer og e-poster fra mange. Kjører i nettleseren, ingenting lastes opp."
 }};

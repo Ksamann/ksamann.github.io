@@ -142,7 +142,7 @@ export async function fetchJourney(id, date){
   const sj=d.serviceJourney; if(!sj) throw new Error("journey not found");
   return { id:sj.id, line:sj.line.publicCode, date, fetchedAt:Date.now(),
     dest: sj.estimatedCalls.length ? (sj.estimatedCalls[0].destinationDisplay||{}).frontText||"" : "",
-    calls: sj.estimatedCalls.map(c=>({ id:c.quay.stopPlace.id, name:c.quay.stopPlace.name, quay:c.quay.publicCode||"",
+    calls: sj.estimatedCalls.map(c=>({ id:c.quay.stopPlace.id, name:c.quay.stopPlace.name, quay:c.quay.publicCode||"", dest:(c.destinationDisplay||{}).frontText||"",
       aArr:T(c.aimedArrivalTime), aDep:T(c.aimedDepartureTime), eArr:T(c.expectedArrivalTime), eDep:T(c.expectedDepartureTime),
       xArr:T(c.actualArrivalTime), xDep:T(c.actualDepartureTime), cancel:!!c.cancellation })) };
 }

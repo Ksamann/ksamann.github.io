@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0c0f13">
+<title>Banepuls – Analysis</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+/* Layout: a wide single column for desktop analysis that also works on a phone: header, intake, filters, tabs, table. */
+:root{
+  color-scheme:dark;
+  --bg:#0c0f13; --surface:#151a20; --surface-2:#1d232b; --rule:#262e38;
+  --fg:#eef1f4; --muted:#8b95a0; --dim:#4d5661; --accent:#6fb7ff; --ok:#5fd16b;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg)}
+body{font-family:var(--f-body);font-size:15px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px}
+body.drag{outline:3px dashed var(--accent);outline-offset:-8px}
+main{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+a{color:var(--accent)}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+h1{font-family:var(--f-display);font-weight:800;font-size:32px;margin:0;line-height:1}
+h1 small{display:block;font-family:var(--f-body);font-weight:500;font-size:14px;color:var(--muted);margin-top:6px}
+h3{font-family:var(--f-display);font-size:18px;margin:8px 0 4px}
+.hint{color:var(--muted);font-size:13.5px;margin:0;max-width:75ch}
+.btn{min-height:42px;padding:0 14px;border-radius:10px;background:var(--surface);font-weight:600;color:var(--fg);text-decoration:none;display:inline-flex;align-items:center}
+.btn.primary{background:var(--fg);color:var(--bg)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.intake{display:grid;grid-template-columns:1fr 1fr;gap:12px;background:var(--surface);border-radius:14px;padding:14px}
+.intake>div{display:flex;flex-direction:column;gap:8px;min-width:0}
+textarea{width:100%;min-height:84px;border-radius:10px;background:var(--bg);border:1px solid var(--rule);color:var(--fg);font:13px var(--f-mono);padding:8px}
+#msg{color:var(--ok);font-size:13.5px;min-height:1em}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.filters select,.filters input[type=date]{min-height:38px;border-radius:9px;background:var(--surface);border:1px solid var(--rule);color:var(--fg);font:14px var(--f-body);padding:0 8px;text-transform:none;letter-spacing:0}
+.filters .chk{flex-direction:row;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--fg);font-weight:500;min-height:38px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tabs button{min-height:38px;padding:0 12px;border-radius:9px;background:var(--surface);color:var(--muted);font-weight:600;font-size:14px}
+.tabs button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+#view{display:flex;flex-direction:column;gap:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.kpi{background:var(--surface);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpi b{font:700 22px var(--f-mono)}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 10px;border-bottom:1px solid var(--rule);text-align:left;white-space:nowrap}
+th{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;cursor:pointer;user-select:none;position:sticky;top:0;background:var(--surface)}
+th.n,td.n{text-align:right}
+td.n{font-family:var(--f-mono);font-size:13px}
+tr:last-child td{border-bottom:0}
+td.barc{min-width:120px;width:22%;position:relative}
+td.barc i{display:block;height:10px;border-radius:5px;background:var(--accent);opacity:.8}
+td.barc b{position:absolute;top:6px;bottom:6px;width:2px;background:var(--fg)}
+.none{color:var(--muted)}
+.empty{background:var(--surface);border-radius:14px;padding:20px}
+.empty p{color:var(--muted);margin:6px 0 0;max-width:70ch}
+.roles{list-style:none;margin:0;padding:0;display:flex;gap:8px;flex-wrap:wrap}
+.roles li{background:var(--surface);border-radius:999px;padding:4px 12px;display:flex;gap:8px}
+.roles b{font-family:var(--f-mono)}
+@media (max-width:700px){ .intake{grid-template-columns:1fr} h1{font-size:26px} }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Banepuls analysis<small>Combine data from many people. Runs in this browser; nothing is uploaded.</small></h1>
+    <div class="row"><a class="btn" href="./">← App</a><a class="btn" href="guide.html#analysis">Guide</a></div>
+  </header>
+
+  <section class="intake" aria-label="Add data">
+    <div>
+      <b>Files</b>
+      <p class="hint">Banepuls or T-bane logger JSON files, or saved emails (.eml, .txt). You can also drop files anywhere on this page.</p>
+      <div class="row"><button class="btn primary" id="pick">Choose files</button><input type="file" id="files" multiple accept=".json,.eml,.txt,application/json,message/rfc822,text/plain" hidden></div>
+    </div>
+    <div>
+      <label for="paste"><b>Paste email text</b></label>
+      <textarea id="paste" placeholder="Paste one or more emails sent with “Send for analysis”."></textarea>
+      <div class="row"><button class="btn" id="addPaste">Add pasted text</button></div>
+    </div>
+  </section>
+  <p id="msg" role="status"></p>
+
+  <div class="filters">
+    <label>Line<select id="fline"><option value="">All</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select></label>
+    <label>Time band<select id="fband"><option value="">All</option><option value="peak">Peak (07–09, 15–17)</option><option value="day">Day</option><option value="evening">Evening and night</option><option value="weekend">Weekend</option></select></label>
+    <label>Role<select id="frole"><option value="">All</option></select></label>
+    <label>From<input type="date" id="ffrom"></label>
+    <label>To<input type="date" id="fto"></label>
+    <label class="chk"><input type="checkbox" id="fok" checked> Leave out flagged values</label>
+  </div>
+
+  <div class="row" style="justify-content:space-between">
+    <div class="tabs" role="group" aria-label="View">
+      <button data-tab="overview">Overview</button><button data-tab="legs">Running times</button><button data-tab="dwell">Dwell times</button><button data-tab="rt">Realtime accuracy</button><button data-tab="doubles">Double measurements</button><button data-tab="headway">Headways</button>
+    </div>
+    <div class="row"><button class="btn" id="csvTable">Table as CSV</button><button class="btn" id="csvAll">All data as CSV</button><button class="btn" id="clear">Clear</button></div>
+  </div>
+  <p class="hint" id="count"></p>
+  <section id="view" aria-live="polite"></section>
+</main>
+<script type="module" src="js/analyse.js"></script>
+</body>
+</html>
