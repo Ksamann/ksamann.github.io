@@ -183,6 +183,7 @@ tr:last-child td{border-bottom:0}
 .hist .acts button{height:40px;padding:0 12px;border-radius:10px;background:var(--surface-2);font-size:14px;font-weight:600}
 .hist .confirm{background:var(--bg)}
 
+.trylink{display:block;font-size:13px;font-weight:600;color:var(--muted);text-decoration:none;margin-top:-8px}
 .strip{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:48px;padding:10px 14px;border-radius:12px;background:var(--surface);text-align:left;font-size:14px;color:var(--muted)}
 .strip b{color:var(--fg);font-weight:600}
 .strip>span:last-child{font-size:22px;color:var(--fg)}
@@ -707,6 +708,7 @@ function drawSetup(){
   app.innerHTML = `<section class="screen">
     <div class="bar"><h1 class="wrap">${t.appTitle}</h1>${langToggle()}${helpLink()}<button class="iconbtn" data-go="hist">${t.history}</button></div>
     ${statsStrip()}
+    <a class="trylink" href="banepuls/">${lang==="no"?"Prøv Banepuls: sanntid, og tidsstudier sammenlignet med plan og sanntid":"Try Banepuls: realtime, and time studies compared with plan and realtime"} →</a>
     <div class="field"><span class="label">${t.line}</span>
       <div class="lines">${Object.entries(DEFAULT_LINES).map(([k,v])=>`<button style="--c:${v.color};--k:${v.ink}" aria-pressed="${k===S.line}" data-line="${k}">${k}</button>`).join("")}</div></div>
     <div class="field"><span class="label">${t.direction}</span>

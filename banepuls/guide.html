@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d1013">
+<title>Banepuls – User guide</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../fonts/fonts.css">
+<style>
+:root{
+  color-scheme: dark;
+  --bg:#0d1013; --surface:#161a1f; --surface-2:#1f242b; --rule:#2a3139;
+  --fg:#eef1f4; --muted:#9aa3ad; --warn:#f0b43c; --hi:#6fb7ff;
+  --f-display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg);margin:0}
+html{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{font-family:var(--f-body);font-size:17px;line-height:1.55;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px 48px;-webkit-text-size-adjust:100%}
+main{max-width:640px;margin:0 auto}
+a{color:var(--hi)}
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:20px}
+.back{display:inline-flex;align-items:center;min-height:44px;padding:0 14px;border-radius:12px;background:var(--surface);color:var(--fg);text-decoration:none;font-weight:600}
+.lines{display:flex;gap:5px}
+.lines i{width:12px;height:12px;border-radius:50%}
+h1{font-family:var(--f-display);font-weight:800;font-size:36px;line-height:1.05;margin:0 0 6px;text-wrap:balance}
+.lead{color:var(--muted);margin:0 0 24px;max-width:62ch}
+h2{font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.15;margin:36px 0 10px;display:flex;align-items:baseline;gap:10px;text-wrap:balance}
+h2 .n{font-family:var(--f-mono);font-size:14px;color:var(--muted);font-weight:500}
+p,li{max-width:65ch}
+ol,ul{padding-left:1.3em;margin:8px 0}
+li{margin:6px 0}
+b{font-weight:600}
+.btn{display:inline-block;font-family:var(--f-display);font-weight:700;font-size:.92em;letter-spacing:.04em;padding:0 7px;border-radius:6px;background:var(--surface-2);border:1px solid var(--rule);white-space:nowrap}
+.btn.dep{background:#3aaa35;color:#061405;border-color:#3aaa35}
+.btn.arr{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.note{background:var(--surface);border-left:4px solid var(--warn);border-radius:0 10px 10px 0;padding:10px 14px;margin:14px 0}
+.note p{margin:0}
+.toc{background:var(--surface);border-radius:12px;padding:12px 16px;margin-bottom:8px}
+.toc ol{columns:2;column-gap:24px;margin:4px 0;font-size:15px}
+.toc li{margin:3px 0;break-inside:avoid}
+.toc a{color:var(--fg);text-decoration:none}
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:12px;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:8px 10px;text-align:left;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+tr:last-child td{border-bottom:0}
+code{font-family:var(--f-mono);font-size:.85em;background:var(--surface-2);padding:1px 5px;border-radius:5px}
+footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid var(--rule);padding-top:14px}
+@media (max-width:420px){ .toc ol{columns:1} h1{font-size:31px} }
+@media print{
+  :root{color-scheme:light;--bg:#fff;--surface:#f3f4f6;--surface-2:#eceef1;--rule:#d6dadf;--fg:#111;--muted:#555;--hi:#1d7a19}
+  body{font-size:12pt;padding:0}
+  .back{display:none}
+  h2{break-after:avoid}
+  .toc,.note,.tblwrap{break-inside:avoid}
+  a{color:var(--fg);text-decoration:none}
+}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <a class="back" href="./">← Back to app</a>
+    <span class="lines" aria-hidden="true"><i style="background:#009cdc"></i><i style="background:#ea5b0b"></i><i style="background:#a683a5"></i><i style="background:#3d6fd1"></i><i style="background:#3aaa35"></i></span>
+  </div>
+
+  <h1>Banepuls<br>User guide</h1>
+  <p class="lead">Banepuls shows the Oslo metro in realtime and lets you time trains yourself. Every time study is linked to the actual departure in Entur's open data, so you see three times for each stop: the <b>plan</b>, the <b>realtime</b> data, and what you <b>measured</b>.</p>
+
+  <nav class="toc" aria-label="Contents">
+    <ol>
+      <li><a href="#open">Opening the app</a></li>
+      <li><a href="#now">The Now tab</a></li>
+      <li><a href="#study">Time study</a></li>
+      <li><a href="#result">Reading the result</a></li>
+      <li><a href="#platform">Platform mode</a></li>
+      <li><a href="#ping">Ping</a></li>
+      <li><a href="#trips">Trips and trends</a></li>
+      <li><a href="#send">Sending data for analysis</a></li>
+      <li><a href="#data">Data formats</a></li>
+      <li><a href="#tips">Tips</a></li>
+    </ol>
+  </nav>
+
+  <h2 id="open"><span class="n">1</span>Opening the app</h2>
+  <ul>
+    <li>Open <a href="https://ksamann.github.io/banepuls/">ksamann.github.io/banepuls</a>. Install it from the browser menu (<b>Share → Add to Home Screen</b> in Safari, <b>⋮ → Install app</b> in Chrome).</li>
+    <li>After the first visit the app opens without signal. Realtime needs a connection; logging does not.</li>
+    <li>Switch language under <span class="btn">More</span>. Station names stay in Norwegian.</li>
+    <li>The original apps, Linjeblikk and the T-bane logger, still work. Trips from the T-bane logger can be imported (see <a href="#trips">Trips</a>).</li>
+  </ul>
+
+  <h2 id="now"><span class="n">2</span>The Now tab</h2>
+  <ul>
+    <li><b>Station</b>: departures from your station, grouped by direction, with where each train is now and a “leave in” countdown that uses your walking time. The nearest station is found from your position if you allow it; you can also pick one.</li>
+    <li>Each departure has <span class="btn">Log</span> (start a time study on that train) and <span class="btn">Ping</span> (see <a href="#ping">Ping</a>).</li>
+    <li><b>Line</b>: every train on one line, both directions. Tap a train for details and <b>Log from …</b>.</li>
+    <li><b>Map</b>: the whole network with trains in realtime. Drag, pinch or use the buttons to zoom.</li>
+    <li><b>Timetable</b>: a graphic timetable of the common tunnel or Tøyen–Brynseng. Steep lines are running trains, vertical lines are trains standing still.</li>
+    <li>Service messages from Ruter (for example rail replacement buses) appear on the station view.</li>
+  </ul>
+
+  <h2 id="study"><span class="n">3</span>Time study</h2>
+  <ol>
+    <li>Tap <span class="btn">Log</span> on a departure, or go to <span class="btn">Log</span>, choose <b>Time study</b> and pick the train.</li>
+    <li>The app fetches the whole departure. Choose where to stop logging under <b>End at</b>, and add a note if you like.</li>
+    <li>The clock is synced with the server before you start. The line under the button tells you how far off your phone was; this is corrected in the results.</li>
+    <li>Tap <span class="btn">Start time study</span>. Then tap the large button the moment the train starts moving (<span class="btn dep">DEPART</span>) and the moment it has stopped (<span class="btn arr">ARRIVE</span>), station by station. The time is taken when your finger touches the screen.</li>
+  </ol>
+  <ul>
+    <li>While logging, the table under the button shows <b>Plan</b>, <b>Realtime</b> and <b>Measured</b> for each tap, with <b>Δ</b> = measured minus realtime. The panel also shows the realtime time the system expects for your next tap.</li>
+    <li><span class="btn">↶ Undo</span> removes the last tap; <span class="btn">✎ Note</span> adds a note to the current station.</li>
+    <li>The trip ends by itself when you arrive at the end station, or with <span class="btn">Finish</span>. If it ended by mistake, use <b>↶ Resume trip</b> on the result.</li>
+    <li>No signal or no realtime? Choose <b>Set up by hand</b> to pick line, direction, start and end yourself, as in the T-bane logger. Plan and realtime are then missing.</li>
+  </ul>
+
+  <h2 id="result"><span class="n">4</span>Reading the result</h2>
+  <ul>
+    <li><b>Mean deviation</b> and <b>largest deviation</b> compare your taps with Entur's realtime times. A positive Δ means the event happened later than realtime said.</li>
+    <li><b>Used vs plan</b> compares the time from your first departure to your last arrival with the timetable.</li>
+    <li>The chart draws plan (dashed), realtime (blue) and your measurements (white) on the same time axis.</li>
+    <li>Realtime shown in grey-blue is a forecast; full colour is an <b>actual</b> time reported by the system. Times marked <b>≈</b> are identical to the plan on the whole minute and were probably copied from it, so they are left out of the comparison.</li>
+  </ul>
+  <div class="note"><p><b>Why the app fetches realtime straight away.</b> Entur keeps actual times for the metro for only about an hour. Banepuls fetches them during the trip and a few times right after. Keep the app open for a minute after the trip if you can.</p></div>
+  <div class="note"><p><b>What realtime doesn't have.</b> For the metro, realtime usually has a single time per stop, with arrival equal to departure. Dwell times therefore come only from your taps, which makes them especially valuable.</p></div>
+
+  <h2 id="platform"><span class="n">5</span>Platform mode</h2>
+  <ul>
+    <li>Stand on one station and log every train that passes. Go to <span class="btn">Log</span> → <b>Platform mode</b> → start.</li>
+    <li>There is one big button per direction. Tap <span class="btn arr">ARRIVE</span> when a train stops and <span class="btn dep">DEPART</span> when it starts moving. Each train is matched to its departure in realtime.</li>
+    <li>The result shows dwell time per train and the headway between trains in the same direction, with medians.</li>
+  </ul>
+
+  <h2 id="ping"><span class="n">6</span>Ping</h2>
+  <ul>
+    <li>A one-tap record that you were on a particular train, with plan and realtime at that moment. No timing.</li>
+    <li>Afterwards you can say how it went: <b>On time</b>, <b>Delayed</b> or <b>Crowded</b>.</li>
+  </ul>
+
+  <h2 id="trips"><span class="n">7</span>Trips and trends</h2>
+  <ul>
+    <li>All time studies, platform sessions and pings are stored on the phone, newest first. Tap one to see its result again.</li>
+    <li><b>My trends</b> shows the median running time on the legs you have measured most, against the timetable, and how far realtime has been from your measurements on average.</li>
+    <li><span class="btn">Import</span> reads JSON files from Banepuls or the T-bane logger, for example to move data to a new phone.</li>
+  </ul>
+
+  <h2 id="send"><span class="n">8</span>Sending data for analysis</h2>
+  <ul>
+    <li>Data never leaves the phone unless you send or share it. There is no account and no tracking.</li>
+    <li>To send to someone who collects data, add their address under <span class="btn">More</span> → <b>Analysis address</b>, or open the invitation link you were given (it fills in the address).</li>
+    <li><span class="btn">Send for analysis</span> opens your mail app with a short summary and the data, ready to send. Very long sets are shared as files instead and the address is copied for you.</li>
+    <li>Your name and who you are (for example Sporveien, enthusiast) are optional and only included if you fill them in.</li>
+    <li><span class="btn">Share</span>, <span class="btn">CSV</span> and <span class="btn">JSON</span> give you the files directly.</li>
+  </ul>
+
+  <h2 id="data"><span class="n">9</span>Data formats</h2>
+  <p>The CSV has one row per measured stop (time study), per train (platform) or per ping. The most important columns:</p>
+  <div class="tblwrap"><table>
+    <thead><tr><th>Column</th><th>Content</th></tr></thead>
+    <tbody>
+      <tr><td><code>kind</code>, <code>journey_id</code></td><td><code>study</code>, <code>platform</code> or <code>ping</code>, and the departure's ID in Entur</td></tr>
+      <tr><td><code>plan_arrival</code>, <code>plan_departure</code></td><td>Timetable times</td></tr>
+      <tr><td><code>rt_arrival</code>, <code>rt_departure</code>, <code>rt_is_actual</code>, <code>rt_equals_plan</code></td><td>Realtime, whether it was an actual time, and whether it equalled the plan</td></tr>
+      <tr><td><code>measured_arrival</code>, <code>measured_departure</code></td><td>Your taps, corrected with the clock offset, with milliseconds and time zone</td></tr>
+      <tr><td><code>delta_arrival_s</code>, <code>delta_departure_s</code></td><td>Measured minus realtime, in seconds</td></tr>
+      <tr><td><code>dwell_s</code>, <code>run_s</code>, <code>headway_s</code></td><td>Dwell, running time to the next stop, and headway (platform mode)</td></tr>
+      <tr><td><code>clock_offset_ms</code></td><td>The correction applied: server time minus phone time</td></tr>
+    </tbody>
+  </table></div>
+  <p>The JSON file (version 3) has the raw taps with the phone's own clock, the realtime snapshot, the clock sync and all derived values. In English the CSV uses commas and decimal points; in Norwegian semicolons and decimal commas.</p>
+
+  <h2 id="tips"><span class="n">10</span>Tips</h2>
+  <ul>
+    <li><b>Use the same rule every time</b>: first wheel movement for departure, full stop for arrival.</li>
+    <li><b>Underground with no signal</b> you can keep logging; realtime is fetched when the connection returns, as long as it is within the hour.</li>
+    <li><b>Screen turned off?</b> The app keeps the screen on while logging, but power-saving modes can override it.</li>
+    <li><b>Data lives only on this phone.</b> Send or export before clearing browser data or changing phones.</li>
+  </ul>
+
+  <footer>Realtime and timetable data: Entur (open data, NLOD). Banepuls is an independent app and not made by Ruter or Sporveien.</footer>
+</main>
+</body>
+</html>

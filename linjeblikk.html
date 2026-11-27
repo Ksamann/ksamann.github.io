@@ -42,6 +42,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webki
 .live.off{color:var(--bad)}
 .live.off::before,.live.stale::before{animation:none}
 @keyframes blink{50%{opacity:.25}}
+.bplink{font:700 12px var(--f-body);color:var(--muted);text-decoration:none;border:1px solid var(--rule);border-radius:999px;padding:5px 10px;white-space:nowrap}
 .content{flex:1;min-height:0;overflow:auto;position:relative;-webkit-overflow-scrolling:touch}
 .tabs{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule);background:var(--bg);padding:6px 4px calc(8px + env(safe-area-inset-bottom,0px))}
 .tabs button{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:12px;font-weight:600;color:var(--dim);padding:6px 0}
@@ -176,7 +177,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;-webki
 </head>
 <body>
 <div class="app">
-  <header class="appbar"><h1 id="title">Linjeblikk</h1><span class="live" id="live">KOBLER TIL</span></header>
+  <header class="appbar"><h1 id="title">Linjeblikk</h1><a class="bplink" href="banepuls/" title="Ny app med tidsstudier og sanntid">Banepuls →</a><span class="live" id="live">KOBLER TIL</span></header>
   <div id="linebar">
     <div class="linepick" id="pick" role="group" aria-label="Velg linje"></div>
     <div class="dirhead"><span>Stasjon</span><span id="dR"></span><span id="dL"></span></div>
