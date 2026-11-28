@@ -1,6 +1,8 @@
 /* Banepuls: app shell, Log / Trips / More tabs, and the glue between live data, logging and export. */
 import { $, esc, hm, hms, fmt, sgn, store, toast, buzz, t, lang, setLang, dateStr, uid, isoLocal, askPersist, storageOk, APP_VERSION, COLORS, INK } from "./core.js";
 import { L, POLL_MS, loadNetwork, loadCalls, departures, fetchJourney, situations, stateAt } from "./entur.js";
+import { openTimetable, refresh as refreshTT } from "./timetable.js";
+import { rtValue } from "./model.js";
 import { createDetector, requestMotion, listen, sensorPrecision } from "./motion.js";
 import { V, initLive, build as buildLive, tick as tickLive, setStation, buildPicker, locate } from "./live.js";
 import { syncClock, fresh, clockState } from "./clock.js";
@@ -17,7 +19,7 @@ const A = {
 };
 if(!["now","log","trips","more"].includes(A.tab)) A.tab="now";
 if(A.active){ A.tab="log"; A.step="run"; } else if(A.plat){ A.tab="log"; A.step="platform"; }
-try{ const q=new URLSearchParams(location.search); if(q.get("train")){ A.tv={id:q.get("train"), d:q.get("d")||isoLocal(Date.now()).slice(0,10), to:q.get("to")||"", jr:null, err:null}; A.tab="train"; } }catch(e){}
+try{ const q=new URLSearchParams(location.search); if(q.get("train")){ A.tv={id:q.get("train"), d:q.get("d")||isoLocal(Date.now()).slice(0,10), to:q.get("to")||"", jr:null, err:null, back:null}; A.tab="train"; } }catch(e){}
 const content=$("#content"), sheet=$("#sheet");
 const saveItems = () => store("bp.items", A.items);
 const saveActive = () => store("bp.active", A.active);
@@ -36,7 +38,7 @@ function setLiveBadge(){
 function renderTabs(){
   document.querySelectorAll("[data-tab]").forEach(b=>{ b.setAttribute("aria-selected",b.dataset.tab===A.tab); b.querySelector("span").textContent=t({now:"tabNow",log:"tabLog",trips:"tabTrips",more:"tabMore"}[b.dataset.tab]); });
   const sub=$("#sub"); sub.hidden = A.tab!=="now";
-  sub.innerHTML = [["stn","vStation"],["line","vLine"],["net","vMap"],["sl","vGraph"]].map(([k,s])=>`<button data-view="${k}" aria-pressed="${V.view===k}">${t(s)}</button>`).join("");
+  sub.innerHTML = [["stn","vStation"],["line","vLine"],["net","vMap"],["sl","vGraph"],["tt","vTable"]].map(([k,s])=>`<button data-view="${k}" aria-pressed="${V.view===k}">${t(s)}</button>`).join("");
   $("#title").textContent = (A.tab==="now"||A.tab==="train") ? "Banepuls" : t({log:"tabLog",trips:"tripsTitle",more:"moreTitle"}[A.tab]);
 }
 function draw(){
@@ -45,8 +47,8 @@ function draw(){
   renderTabs();
   content.classList.toggle("full", A.tab==="now" && V.view==="net");
   wantWake(A.tab==="log" && (A.step==="run"||A.step==="platform"));
-  if(A.tab==="train") return drawTrain();
-  if(A.tab==="now"){ if(!L.NET) return netWait(); buildLive(); return; }
+  if(A.tab==="train") return drawDeparture();
+  if(A.tab==="now"){ if(!L.NET) return netWait(); if(V.view==="tt") return openTimetable(content, {openDep:(id,d)=>openDep(id,d,"")}); buildLive(); return; }
   document.documentElement.style.setProperty("--c", COLORS[(A.active&&A.active.line)||V.line]||COLORS["5"]);
   ({log:drawLog, trips:drawTrips, more:drawMore})[A.tab]();
 }
@@ -70,6 +72,7 @@ initLive(content, sheet, {
   onLog: (j, station)=>{ if(A.active){ go("log","run"); return; } startPrep(j, station); },
   onPing: (j, station)=>doPing(j, station),
   onShare: j=>shareTrain(j.id, j.date, "", j.line, j.dest),
+  onDetails: (id, date)=>openDep(id, date, ""),
   banner: name=>sitBanner([...(L.LINESAT[name]||[])])
 });
 
@@ -257,37 +260,65 @@ async function shareTrain(id, date, to, line, dest){
 async function loadTv(){
   clearTimeout(loadTv.t); const tv=A.tv; if(!tv) return;
   try{ tv.jr=await fetchJourney(tv.id, tv.d); tv.err=null; }catch(e){ tv.err=e.message; }
-  if(A.tab==="train") drawTrain();
+  if(A.tab==="train") drawDeparture();
   loadTv.t=setTimeout(loadTv, POLL_MS);
 }
-function drawTrain(){
+function openDep(id, date, to){
+  clearTimeout(loadTv.t); loadTv.t=null;
+  A.tv={id, d:date||isoLocal(Date.now()).slice(0,10), to:to||"", jr:null, err:null, back:A.tab==="train"?(A.tv&&A.tv.back):A.tab};
+  A.tab="train"; draw(); content.scrollTop=0; loadTv();
+}
+function closeDep(){
+  clearTimeout(loadTv.t); loadTv.t=null; const back=A.tv&&A.tv.back; A.tv=null;
+  try{ if(location.search) history.replaceState(null,"",location.pathname); }catch(e){}
+  if(back) go(back, back==="log"&&A.active?"run":undefined); else go(A.active?"log":"now", A.active?"run":undefined);
+}
+const ttCls = d => d==null ? "" : Math.abs(d)<60 ? "" : Math.abs(d)<180 ? "late" : "bad";
+function drawDeparture(){
   clearInterval(draw.tick);
   const tv=A.tv; if(!tv){ A.tab="now"; return draw(); }
-  if(!tv.jr){ content.innerHTML=`<div class="msg">${tv.err?`<b>${t("trainFail")}</b>`:t("trainLoading")}<a class="btn" href="./">${t("openApp")}</a></div>`; if(!tv.err && !loadTv.t) loadTv(); return; }
-  const jr=tv.jr, calls=jr.calls.filter(c=>!c.cancel), now=Date.now();
-  const j={calls:calls.map((c,i)=>({ix:i, p:i, arr:c.xArr??c.eArr, dep:c.xDep??c.eDep, aArr:c.aArr, aDep:c.aDep, cancel:false}))};
+  const backBtn = `<button class="iconbtn" id="tvback" aria-label="${t("back")}">${tv.back?"←":t("openApp")}</button>`;
+  if(!tv.jr){ content.innerHTML=`<section class="screen"><div class="bar">${backBtn}</div><div class="msg">${tv.err?`<b>${t("trainFail")}</b>`:t("trainLoading")}</div></section>`; $("#tvback").onclick=closeDep; if(!tv.err && !loadTv.t) loadTv(); return; }
+  const jr=tv.jr, calls=jr.calls, now=Date.now();
+  const j={calls:calls.map((c,i)=>({ix:i, p:i, arr:c.xArr??c.eArr, dep:c.xDep??c.eDep, aArr:c.aArr, aDep:c.aDep, cancel:c.cancel}))};
   const s=stateAt(j,now), pos=s?Math.floor(s.pos):(now<(j.calls[0].dep||0)?0:calls.length-1);
-  const ended=!s && now>(j.calls[0].dep||0);
+  const ended=!s && now>(j.calls[0].dep||0), allCx=calls.every(c=>c.cancel);
   let toIx=-1; if(tv.to){ toIx=calls.findIndex((c,i)=>c.name===tv.to && i>=Math.min(pos,calls.length-1)); if(toIx<0) toIx=calls.findIndex(c=>c.name===tv.to); }
-  const status = s ? (s.wait ? t("waitingFrom",esc(calls[Math.round(s.pos)].name)) : s.at ? t("standingAt",esc(calls[Math.round(s.pos)].name)) : t("between",esc(calls[Math.floor(s.pos)].name),esc(calls[Math.ceil(s.pos)].name)))
+  const status = allCx ? t("cancelled") : s ? (s.wait ? t("waitingFrom",esc(calls[Math.round(s.pos)].name)) : s.at ? t("standingAt",esc(calls[Math.round(s.pos)].name)) : t("between",esc(calls[Math.floor(s.pos)].name),esc(calls[Math.ceil(s.pos)].name)))
     : ended ? t("trainDone") : t("waitingFrom",esc(calls[0].name));
   const dl = s ? (s.delay<60 ? t("onTime") : `+${Math.round(s.delay/60)} min`) : "";
   let arrive="";
   if(toIx>=0){ const c=calls[toIx], at=c.xArr??c.eArr??c.aArr, done=(c.xArr!=null && c.xArr<=now) || (at!=null && now>at+60e3 && (ended || pos>=toIx));
     arrive=`<div class="arrive"><span class="label">${done?t("arrivedAt",esc(c.name)):t("arrivesAt",esc(c.name))}</span><b class="num">${done?hms(c.xArr??at):`${hm(at)}`}</b>${!done&&c.aArr&&Math.abs(at-c.aArr)>=60e3?`<s class="num">${hm(c.aArr)}</s>`:""}</div>`; }
-  const from = s ? (s.at ? Math.round(s.pos) : Math.ceil(s.pos)) : (ended?calls.length:0);
-  const upto = toIx>=0 ? Math.max(toIx, from) : calls.length-1, next=calls.slice(from, Math.min(calls.length, Math.max(upto+1, from+6)));
+  const sign=(calls[Math.min(Math.max(pos,0),calls.length-1)]||{}).dest||jr.dest||calls[calls.length-1].name;
+  const states=new Set(calls.map(c=>c.state)), inacc=calls.some(c=>c.inaccurate), occ=calls.map(c=>c.occ).find(o=>o&&o!=="noData");
+  const rtLabel = inacc ? t("rtInaccurate") : (states.has("updated")||calls.some(c=>c.xDep||c.xArr)) ? t("rtLive") : t("rtPlanOnly");
+  const first=calls[0], last=calls[calls.length-1];
+  const fact=(k,v)=>v?`<div><span>${k}</span><b>${esc(v)}</b></div>`:"";
+  const msgs=[...jr.situations.map(x=>(lang==="en"&&x.en)||x.no||x.en), ...jr.notices, ...calls.flatMap(c=>c.situations.map(x=>`${c.name}: ${(lang==="en"&&x.en)||x.no||x.en}`)), ...calls.flatMap(c=>c.notices.map(n=>`${c.name}: ${n}`))].filter(Boolean);
+  const curIx = s ? (s.at?Math.round(s.pos):Math.ceil(s.pos)) : (ended?calls.length:0);
+  const rows=calls.map((c,i)=>{
+    const planT=c.aDep??c.aArr, rv=rtValue(c, c.aDep!=null?"dep":"arr"), rtT=rv&&rv.v, d=rtT!=null&&planT!=null?(rtT-planT)/1000:null;
+    const cls=[i<curIx?"past":"", i===curIx?"cur":"", i===toIx?"to":"", c.cancel?"cx":""].join(" ");
+    const plat=[c.quay?`${t("platform")} ${c.quay}`:"", c.quayDesc].filter(Boolean).join(" · ");
+    const restr=!c.board&&c.alight?t("onlyAlight"):c.board&&!c.alight&&i>0?t("onlyBoard"):"";
+    return `<tr class="${cls}"><td>${esc(c.name)}<small>${esc(plat)}${restr?` · <span class="warn">${restr}</span>`:""}${c.cancel?` · <span class="bd">${t("cancelled")}</span>`:""}</small></td>
+      <td class="p">${planT!=null?hm(planT):"–"}</td><td class="r ${rv&&!rv.actual?"exp":""}">${rtT!=null?(rv.copy?"≈ ":"")+hms(rtT)+(rv.actual&&!rv.copy?" ✓":""):"–"}</td><td class="d ${ttCls(d)}">${d==null?"–":(Math.abs(d)<30?"0":sgn(Math.round(d/60))+" min")}</td></tr>`; }).join("");
+  const live=L.JOURNEYS.find(x=>x.id===jr.id), myStn=V.stn, myIx=live?calls.findIndex((c,i)=>i>=curIx && c.name===myStn && i<calls.length-1):-1;
   content.innerHTML=`<section class="screen">
-    <div class="bar"><span class="badge" style="background:${COLORS[jr.line]};color:${INK[jr.line]}">${esc(jr.line)}</span><h1>${t("towards")} ${esc((calls[Math.min(from,calls.length-1)]||{}).dest||jr.dest||calls[calls.length-1].name)}<small>${status}${dl?` · ${dl}`:""}</small></h1></div>
+    <div class="bar">${backBtn}<span class="badge" style="background:${COLORS[jr.line]};color:${INK[jr.line]}">${esc(jr.line)}</span><h1>${t("towards")} ${esc(sign)}<small>${status}${dl?` · ${dl}`:""}</small></h1></div>
     ${arrive}
-    ${next.length?`<span class="label">${t("nextStops")}</span><ol class="nextl">${next.map((c,k)=>{ const i=from+k, tt=c.xArr??c.eArr??c.xDep??c.eDep??c.aArr??c.aDep, pl=c.aArr??c.aDep;
-      return `<li class="${i===toIx?"to":""}"><i></i><span>${esc(c.name)}</span>${pl&&Math.abs(tt-pl)>=60e3?`<s class="num">${hm(pl)}</s>`:"<s></s>"}<b class="num">${hm(tt)}</b></li>`; }).join("")}</ol>`:""}
-    <div class="btnrow"><button class="btn" id="tvshare">↗ ${t("shareTrain")}</button><button class="btn primary" id="tvopen">${t("openApp")}</button></div>
-    <p class="hint">${t("live")} · Entur · ${hms(jr.fetchedAt)}</p>
+    <div class="facts">${fact(t("depNo"),jr.code)}${fact(t("date"),jr.date?dateStr(Date.parse(jr.date+"T12:00:00")):"")}${fact(t("planned"),first?`${hm(first.aDep??first.aArr)} ${first.name} → ${hm(last.aArr??last.aDep)} ${last.name}`:"")}${fact(t("lineName"),jr.lineName)}${fact(t("pattern"),jr.pattern)}${fact(t("operator"),jr.operator)}${fact(t("rtStatus"),rtLabel)}${occ?fact(t("occupancy"),occ):""}</div>
+    ${msgs.length?`<div class="alert"><span aria-hidden="true">⚠</span><div>${msgs.slice(0,4).map(m=>`<p>${esc(m)}</p>`).join("")}</div></div>`:""}
+    <div class="tblwrap"><table class="tri dept"><thead><tr><th>${t("colStation")}</th><th>${t("colPlan")}</th><th>${t("colRt")}</th><th>${t("delay")}</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <div class="btnrow">${myIx>=0&&!A.active?`<button class="btn primary" id="tvlog">${t("logFrom",esc(myStn))}</button>`:""}<button class="btn" id="tvshare">↗ ${t("shareTrain")}</button>${live?`<button class="btn" id="tvline">${t("showOnLine")}</button>`:""}</div>
+    <p class="hint">${t("deltaHelp2")} · Entur ${hms(jr.fetchedAt)}</p>
   </section>`;
-  $("#tvshare").onclick=()=>shareTrain(tv.id, tv.d, tv.to, jr.line, jr.dest);
-  $("#tvopen").onclick=()=>{ clearTimeout(loadTv.t); loadTv.t=null; A.tv=null; try{ history.replaceState(null,"",location.pathname); }catch(e){} go(A.active?"log":"now", A.active?"run":undefined); };
-  draw.tick=setInterval(()=>{ if(A.tab==="train" && !document.hidden) drawTrain(); }, 5000);
+  $("#tvback").onclick=closeDep;
+  $("#tvshare").onclick=()=>shareTrain(tv.id, tv.d, tv.to, jr.line, sign);
+  const tl=$("#tvlog"); if(tl) tl.onclick=()=>{ const lj=L.JOURNEYS.find(x=>x.id===jr.id); if(lj){ A.tv=null; startPrep(lj, myStn); } };
+  const tln=$("#tvline"); if(tln) tln.onclick=()=>{ V.view="line"; V.line=jr.line; store("bp.view","line"); store("bp.line",jr.line); const id=jr.id; A.tv=null; go("now"); V.sel=id; tickLive(); };
+  draw.tick=setInterval(()=>{ if(A.tab==="train" && !document.hidden) drawDeparture(); }, 10000);
 }
 function drawRun(){
   const trip=A.active, r=trip.route, st=tripState(trip), calls=trip.rt&&trip.rt.calls;
@@ -614,12 +645,12 @@ async function poll(){
   clearTimeout(pollTimer);
   if(document.visibilityState!=="visible" || !L.NET) return;
   try{ await loadCalls(); }catch(e){ L.lastErr=e; }
-  if(A.tab==="now") tickLive();
+  if(A.tab==="now"){ if(V.view==="tt") refreshTT(); else tickLive(); }
   setLiveBadge();
   pollTimer=setTimeout(poll, POLL_MS);
 }
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ poll(); pollJourney(); if(A.tab==="log"&&(A.step==="run"||A.step==="platform")) wantWake(true); } });
-(function frame(){ if(A.tab==="now") tickLive(); setLiveBadge(); setTimeout(()=>requestAnimationFrame(frame),250); })();
+(function frame(){ if(A.tab==="now" && V.view!=="tt") tickLive(); setLiveBadge(); setTimeout(()=>requestAnimationFrame(frame),250); })();
 
 async function boot(){
   draw();

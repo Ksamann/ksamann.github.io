@@ -31,6 +31,7 @@ h1{font-family:var(--f-display);font-weight:800;font-size:36px;line-height:1.05;
 .lead{color:var(--muted);margin:0 0 24px;max-width:62ch}
 h2{font-family:var(--f-display);font-weight:700;font-size:24px;line-height:1.15;margin:36px 0 10px;display:flex;align-items:baseline;gap:10px;text-wrap:balance}
 h2 .n{font-family:var(--f-mono);font-size:14px;color:var(--muted);font-weight:500}
+h3{font-family:var(--f-display);font-weight:600;font-size:19px;margin:22px 0 6px}
 p,li{max-width:65ch}
 ol,ul{padding-left:1.3em;margin:8px 0}
 li{margin:6px 0}
@@ -104,8 +105,17 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
     <li>Each departure has <span class="btn">Log</span> (start a time study on that train) and <span class="btn">Ping</span> (see <a href="#ping">Ping</a>).</li>
     <li><b>Line</b>: every train on one line, both directions. Tap a train for details and <b>Log from …</b>.</li>
     <li><b>Map</b>: the whole network with trains in realtime. Drag, pinch or use the buttons to zoom.</li>
-    <li><b>Timetable</b>: a graphic timetable of the common tunnel or Tøyen–Brynseng. Steep lines are running trains, vertical lines are trains standing still.</li>
+    <li><b>Graph</b>: a graphic timetable of the common tunnel or Tøyen–Brynseng. Steep lines are running trains, vertical lines are trains standing still.</li>
+    <li><b>Table</b>: the line timetable, with stations down the side and departures across. Pick line, direction and date (today, tomorrow or any date), and use <span class="btn">← Earlier</span> / <span class="btn">Later →</span> to move four hours at a time. Departures that have left are dimmed and the next one is highlighted. A “·” means the train does not stop there.</li>
+    <li>For today, trains close to now (about 8 min back to 25 min ahead) also show deviations: the expected or actual time appears in yellow at 1–2 min and red at 3 min or more. Cancelled departures are struck through.</li>
     <li>Service messages from Ruter (for example rail replacement buses) appear on the station view.</li>
+  </ul>
+  <h3>Departure details</h3>
+  <ul>
+    <li>Tap a departure on the station view, <span class="btn">Details</span> on a train in Line or Map, or the departure number at the top of a column in Table.</li>
+    <li>You see the departure number, date, planned first and last stop, line and route, operator, and whether the times come from realtime or only the plan.</li>
+    <li>The stop table lists every stop with platform, <b>Plan</b>, <b>Realtime</b> and <b>Delay</b>. <b>✓</b> marks an actual time, faded times are forecasts, and <b>≈</b> means a copy of the plan. Stops you can only get off or only get on at are marked.</li>
+    <li>From the details you can start a time study (<span class="btn">Log</span>), share the train (<span class="btn">↗</span>) or see it on the line.</li>
   </ul>
 
   <h2 id="study"><span class="n">3</span>Time study</h2>
