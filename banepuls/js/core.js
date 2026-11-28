@@ -1,5 +1,5 @@
 /* Shared helpers, local storage and UI strings (English default, Norwegian). */
-export const APP_VERSION = "1.2.0";
+export const APP_VERSION = "1.3.0";
 export const COLORS = {"1":"#009cdc","2":"#ea5b0b","3":"#a683a5","4":"#3d6fd1","5":"#3aaa35"};
 export const INK = {"1":"#06131a","2":"#1a0a02","3":"#170f17","4":"#ffffff","5":"#061405"};
 
@@ -45,7 +45,7 @@ export function t(key, ...a){ const v=(STR[lang]&&STR[lang][key]!==undefined)?ST
 const STR = {
 en:{
   tabNow:"Now", tabLog:"Log", tabTrips:"Trips", tabMore:"More",
-  vStation:"Station", vLine:"Line", vMap:"Map", vGraph:"Graph", vTable:"Table",
+  vStation:"Station", vLine:"Line", vMap:"Map", mapGeo:"Geographic", mapSchema:"Schematic", mapLoading:"Loading map…", mapFail:"The map could not be loaded. Check your connection.", wholeNet:"Whole network", myPos:"My position", vGraph:"Graph", vTable:"Table",
   live:"LIVE", connecting:"CONNECTING", noData:"NO DATA", offline:"OFFLINE", minOld:n=>`${n} MIN OLD`,
   netFail:"Couldn't load the lines. Check that you're online and try again.", retry:"Try again",
   nightPause:"No trains running right now", nightPauseText:"The metro has its night break. Trains appear here when service starts.",
@@ -151,7 +151,7 @@ en:{
 },
 no:{
   tabNow:"Nå", tabLog:"Logg", tabTrips:"Turer", tabMore:"Mer",
-  vStation:"Stasjon", vLine:"Linje", vMap:"Kart", vGraph:"Graf", vTable:"Tabell",
+  vStation:"Stasjon", vLine:"Linje", vMap:"Kart", mapGeo:"Geografisk", mapSchema:"Skjematisk", mapLoading:"Laster kart …", mapFail:"Kartet kunne ikke lastes. Sjekk nettforbindelsen.", wholeNet:"Hele nettet", myPos:"Min posisjon", vGraph:"Graf", vTable:"Tabell",
   live:"LIVE", connecting:"KOBLER TIL", noData:"INGEN DATA", offline:"FRAKOBLET", minOld:n=>`${n} MIN GAMMEL`,
   netFail:"Fikk ikke hentet linjene. Sjekk at du er på nett, og prøv igjen.", retry:"Prøv igjen",
   nightPause:"Ingen tog i trafikk akkurat nå", nightPauseText:"T-banen har nattpause. Togene dukker opp her når driften starter.",

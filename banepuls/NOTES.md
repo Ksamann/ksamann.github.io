@@ -11,3 +11,9 @@ Source: Entur Journey Planner v3 (`https://api.entur.io/journey-planner/v3/graph
 | Clock | Entur does not expose the `Date` header to browsers (no `Access-Control-Expose-Headers`). | Clock sync uses HEAD requests to the app's own origin, several samples spread over the second, intersected to about ±0.1–0.5 s. |
 | Nearest station | `nearest(...)` works, but stop coordinates also come with the network query. | Nearest station is computed on the phone, so it also works offline. |
 | Service messages | `lines{ situations }` per line. | Shown on the station view and when choosing a train. |
+
+## Geographic map (1.3)
+- Track geometry: `journeyPattern.pointsOnLink.points` (Google encoded polyline, 1e-5) exists for every metro pattern. Each pattern is cut at its stops by searching forward along the line (first local minimum within ~300 m), so line 5's second pass through the centre lands on the right part. Pieces are stored per stop pair in both directions (`bp.geo` in localStorage, ~190 kB, 7 days). Nov 2026: 208 stop pairs, no straight-line fallbacks; line 5 = 38 km.
+- Trains: `stateAt` gives a fractional position between two calls; `geoAt` places it along the stop-pair pieces by length.
+- Shared track: each stop pair gets one lane per line (fixed order 3,2,1,4,5), drawn as pixel offsets and redrawn on zoom.
+- Base map: Kartverket topograatone WMTS (cache.kartverket.no, CC BY 4.0, no key), darkened with a CSS filter. Leaflet 1.9.4 is vendored in `vendor/leaflet` (BSD-2) and loaded on first use.

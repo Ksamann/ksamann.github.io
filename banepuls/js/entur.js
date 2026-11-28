@@ -112,6 +112,84 @@ export function stateAt(j,t){
   const span=Math.max(1,(b.arr||b.dep)-a.dep), f=Math.min(1,Math.max(0,(t-a.dep)/span));
   return {pos:a.ix+(b.ix-a.ix)*f, at:false, next:i+1, delay:delayOf(b)};
 }
+/* ---------- track geometry (for the geographic map) ----------
+   Every journey pattern has its real track as an encoded polyline (pointsOnLink). Each pattern is
+   cut at its stops (searching forward, so line 5's second pass through the centre is handled) and
+   stored per stop pair: GEO.seg["A|B"] = [[lat,lng],...] in both directions. */
+export const GEO = { seg:null, loading:null };
+const GEO_TTL = 7*864e5;
+export function decodePolyline(s){
+  const out=[]; let i=0, lat=0, lng=0;
+  while(i<s.length){
+    for(const k of [0,1]){ let r=0, sh=0, b; do{ b=s.charCodeAt(i++)-63; r|=(b&31)<<sh; sh+=5; }while(b>=32);
+      const d=(r&1)?~(r>>1):(r>>1); if(k===0) lat+=d; else lng+=d; }
+    out.push([lat/1e5, lng/1e5]);
+  }
+  return out;
+}
+export function metres(a,b){ const k=111320, dx=(b[1]-a[1])*k*Math.cos(a[0]*Math.PI/180), dy=(b[0]-a[0])*k; return Math.hypot(dx,dy); }
+// Cut one pattern into stop-to-stop pieces. pos: {stopId:[lat,lng]}.
+export function cutPattern(pts, stops, pos, seg){
+  const cut=[]; let k=0;
+  for(const s of stops){ const P=pos[s]; if(!P){ cut.push(null); continue; }
+    let best=Infinity, bi=k;
+    for(let i=k;i<pts.length;i++){ const d=metres(pts[i],P); if(d<best){ best=d; bi=i; } else if(best<300 && d>best+500) break; }
+    cut.push(best<600?bi:null); if(best<600) k=bi; }
+  for(let a=0;a<stops.length-1;a++){ const b=a+1, A=pos[stops[a]], B=pos[stops[b]]; if(!A||!B) continue;
+    const key=stops[a]+"|"+stops[b]; if(seg[key]) continue;
+    const mid = cut[a]!=null && cut[b]!=null && cut[b]>=cut[a] ? pts.slice(cut[a],cut[b]+1) : [];
+    const piece=[A,...mid,B].map(p=>[+p[0].toFixed(5),+p[1].toFixed(5)]);
+    seg[key]=piece; seg[stops[b]+"|"+stops[a]]=piece.slice().reverse();
+  }
+}
+export function loadGeometry(){
+  if(GEO.seg) return Promise.resolve();
+  if(GEO.loading) return GEO.loading;
+  GEO.loading=(async()=>{
+    const c=store("bp.geo"); if(c && c.v===1 && Date.now()-c.at<GEO_TTL){ GEO.seg=c.seg; return; }
+    const ids=Object.keys(TERMINI).map(k=>`"RUT:Line:${k}"`).join(",");
+    const d=await gql(`{ lines(ids:[${ids}]) { publicCode journeyPatterns { pointsOnLink { points } quays { stopPlace { id latitude longitude } } } } }`);
+    const seg={}, pos={...(L.NET&&L.NET.pos||{})};
+    for(const l of d.lines) for(const jp of l.journeyPatterns){
+      jp.quays.forEach(q=>{ if(q.stopPlace.latitude && !pos[q.stopPlace.id]) pos[q.stopPlace.id]=[q.stopPlace.latitude,q.stopPlace.longitude]; });
+      if(!jp.pointsOnLink || !jp.pointsOnLink.points) continue;
+      cutPattern(decodePolyline(jp.pointsOnLink.points), jp.quays.map(q=>q.stopPlace.id), pos, seg);
+    }
+    GEO.seg=seg; store("bp.geo",{at:Date.now(),v:1,seg});
+  })().finally(()=>{ GEO.loading=null; });
+  return GEO.loading;
+}
+// Track between two stops (falls back to a straight line).
+export function pieceOf(a,b){ const s=GEO.seg&&GEO.seg[a+"|"+b]; if(s) return s; const P=L.NET.pos; return P[a]&&P[b]?[P[a],P[b]]:[]; }
+// Whole track of a line through stations i..j of its station list (either direction).
+export function linePath(code,i=0,j=null){
+  const st=L.NET.lines[code].stations; if(j==null) j=st.length-1;
+  const step=j>=i?1:-1, out=[];
+  for(let k=i;k!==j;k+=step){ const p=pieceOf(st[k].id, st[k+step].id); out.push(...(out.length?p.slice(1):p)); }
+  if(i===j && L.NET.pos[st[i].id]) out.push(L.NET.pos[st[i].id]);
+  return out;
+}
+function along(path,f){
+  if(path.length<2) return path[0]?{p:path[0],b:0}:null;
+  const len=[0]; for(let i=1;i<path.length;i++) len.push(len[i-1]+metres(path[i-1],path[i]));
+  const want=len[len.length-1]*Math.min(1,Math.max(0,f));
+  let i=1; while(i<path.length-1 && len[i]<want) i++;
+  const A=path[i-1], B=path[i], g=len[i]-len[i-1]>0?(want-len[i-1])/(len[i]-len[i-1]):0;
+  const b=Math.atan2((B[1]-A[1])*Math.cos(A[0]*Math.PI/180), B[0]-A[0])*180/Math.PI;
+  return {p:[A[0]+(B[0]-A[0])*g, A[1]+(B[1]-A[1])*g], b};
+}
+// Geographic position of a journey at time t: {lat,lng,bearing,s} or null.
+export function geoAt(j,t){
+  const s=stateAt(j,t); if(!s) return null;
+  const cs=j.calls.filter(c=>!c.cancel);
+  let r;
+  if(s.at){ const c=cs[s.next]||cs[cs.length-1], ix=c.ix, nx=cs[s.next+1];
+    r = nx ? along(linePath(j.line, ix, nx.ix),0) : {p:L.NET.pos[c.stop], b:0}; }
+  else { const a=cs[s.next-1], b=cs[s.next]; const f=(s.pos-a.ix)/((b.ix-a.ix)||1); r=along(linePath(j.line,a.ix,b.ix),f); }
+  if(!r || !r.p) return null;
+  return {lat:r.p[0], lng:r.p[1], bearing:r.b, s};
+}
+
 export function delayOf(c){ const e=c.arr||c.dep, a=c.aArr||c.aDep; return (e&&a) ? Math.round((e-a)/1000) : 0; }
 
 /* Departures at a station (by name) from the realtime window, soonest first. */
