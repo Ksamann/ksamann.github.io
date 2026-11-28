@@ -3,9 +3,10 @@
    departure and in the train sheet, and the nearest station from the phone's position. */
 import { $, esc, pad, hm, store, t, COLORS } from "./core.js";
 import { L, stateAt, delayOf, departures, indexStations } from "./entur.js";
+import { openGeoMap, update as geoUpdate, setSelected as geoSel, focus as geoFocus, close as geoClose } from "./geomap.js";
 
 export const V = { view: store("bp.view")||"stn", line: store("bp.line")||"5", sel:null,
-  stn: store("bp.stn"), walk: store("bp.walk")??4, pinned: store("bp.pin")||{}, recent: store("bp.recent")||[], picking:false, seg: store("bp.seg")||"tunnel", near:null };
+  stn: store("bp.stn"), walk: store("bp.walk")??4, pinned: store("bp.pin")||{}, recent: store("bp.recent")||[], picking:false, seg: store("bp.seg")||"tunnel", near:null, mapMode: store("bp.mapMode")||"geo" };
 if(!["stn","line","net","sl","tt"].includes(V.view)) V.view="stn";
 let content=null, sheet=null, hooks={};
 export function initLive(c, s, h){ content=c; sheet=s; hooks=h; bind(); }
@@ -34,7 +35,7 @@ export function locate(){
 export function build(){
   if(!L.NET || !content) return;
   indexStations();
-  closeSheet();
+  closeSheet(); geoClose();
   ({line:buildLine, net:buildNet, stn:buildStn, sl:buildSL})[V.view]();
   tick();
 }
@@ -92,6 +93,7 @@ function drawSheet(now){
     <ol>${nxt.map(c=>`<li><span>${esc(st[c.ix].name)}</span>${c.aArr&&Math.abs((c.arr||0)-c.aArr)>=60e3?`<s>${hm(c.aArr)}</s>`:"<s></s>"}<span class="mono num">${hm(c.arr||c.dep)}</span></li>`).join("")||`<li><span>${t("lastStation")}</span><s></s><span></span></li>`}</ol>
     <div class="sacts">${other}<button class="sbtn" data-detj="${esc(j.id)}" data-detd="${esc(j.date)}">${t("details")}</button><button class="sbtn sh" data-sharej="${esc(j.id)}" aria-label="${t("shareTrain")}">↗</button>${canLog?`<button class="logbtn" data-logj="${esc(j.id)}" data-logs="${esc(st[ix].name)}" style="--c:${COLORS[j.line]}">${t("logFrom",esc(st[ix].name))}</button>`:""}</div>`;
   if(sheet._html!==html){ sheet.innerHTML=html; sheet._html=html; }
+  sheet.classList.toggle("compact", V.view==="net" && V.mapMode==="geo");
   sheet.hidden=false;
 }
 
@@ -168,7 +170,24 @@ function terminusLabel(name, x, y, half){
   const tx = right ? bx+4 : x-half-12-lines.length*(w+gap);
   return g+`<text class="term" x="${tx}" y="${y+5}" text-anchor="${right?"start":"end"}">${esc(name)}</text>`;
 }
+const mapModeBar=()=>`<div class="mapmode"><div class="seg2" role="group">${[["geo","mapGeo"],["schema","mapSchema"]].map(([k,s])=>`<button data-mm="${k}" aria-pressed="${V.mapMode===k}">${t(s)}</button>`).join("")}</div></div>`;
+const kpiRow=()=>`<div class="kpis"><div class="kpi"><small>${t("trainsOut")}</small><b class="num" id="kT">–</b></div><div class="kpi"><small>${t("punctual")}</small><b class="num" id="kP">–</b></div><div class="kpi"><small>${t("avgDelay")}</small><b class="num" id="kD">–</b></div></div>`;
+function setKpis(n,ok,sum){
+  const kT=$("#kT",content); if(!kT) return;
+  kT.textContent=n; $("#kP",content).textContent=n?Math.round(100*ok/n)+"%":"–";
+  const avg=n?sum/n:0; $("#kD",content).textContent=n?`+${Math.floor(avg/60)}:${pad(Math.round(avg%60))}`:"–";
+}
+let geoSelShown=null;
+function buildGeoMap(){
+  content.innerHTML=`<div class="netview">${mapModeBar()}<div class="map geo" id="map"></div>${kpiRow()}</div>`;
+  geoSelShown=null;
+  openGeoMap($("#map",content), {
+    onTrain: id=>{ if(id) V.sel=id; else closeSheet(); tick(); },
+    onStation: name=>{ setStation(name); V.view="stn"; store("bp.view","stn"); hooks.onView(); }
+  });
+}
 function buildNet(){
+  if(V.mapMode==="geo") return buildGeoMap();
   if(!GEO) buildGeo();
   let lines="", ticks="", labels="";
   for(const code of ["3","2","1","4","5"]){ const g=GEO[code]; if(!g) continue;
@@ -186,16 +205,20 @@ function buildNet(){
       ticks+=`<line x1="${(cx-nx*e).toFixed(1)}" y1="${(cy-ny*e).toFixed(1)}" x2="${(cx+nx*e).toFixed(1)}" y2="${(cy+ny*e).toFixed(1)}" stroke="#eef1f4" stroke-width="1.6" stroke-linecap="round"/>`; }
     labels += TERMINI_ALL.has(s.name) ? terminusLabel(s.name,cx,cy,half) : labelFor(s.name, cx, cy, half, ic);
   });
-  content.innerHTML=`<div class="netview">
+  content.innerHTML=`<div class="netview">${mapModeBar()}
     <div class="map" id="map"><svg id="netsvg" role="img" aria-label="Network map">
       <g id="vp">${lines}${ticks}<g class="lbl">${labels}</g><g id="dots"></g></g></svg>
       <div class="zoom"><button id="zi" aria-label="Zoom in">+</button><button id="zo" aria-label="Zoom out">−</button><button id="zf" aria-label="Fit">⤢</button></div>
     </div>
-    <div class="kpis"><div class="kpi"><small>${t("trainsOut")}</small><b class="num" id="kT">–</b></div><div class="kpi"><small>${t("punctual")}</small><b class="num" id="kP">–</b></div><div class="kpi"><small>${t("avgDelay")}</small><b class="num" id="kD">–</b></div></div>
+    ${kpiRow()}
   </div>`;
   initPanZoom();
 }
 function drawNet(now){
+  if(V.mapMode==="geo"){
+    if(geoSelShown!==V.sel){ geoSelShown=V.sel; geoSel(V.sel); }
+    const r=geoUpdate(now); if(r) setKpis(r.n,r.ok,r.sum); return;
+  }
   const box=$("#dots",content); if(!box) return;
   let html="", sel="", n=0, ok=0, sum=0; TRAINPOS=[];
   for(const j of L.JOURNEYS){ const g=GEO[j.line]; if(!g) continue; const s=stateAt(j,now); if(!s) continue;
@@ -208,8 +231,7 @@ function drawNet(now){
     n++; if(s.delay<180) ok++; sum+=Math.max(0,s.delay);
   }
   box.innerHTML=html+sel;
-  $("#kT",content).textContent=n; $("#kP",content).textContent=n?Math.round(100*ok/n)+"%":"–";
-  const avg=n?sum/n:0; $("#kD",content).textContent=n?`+${Math.floor(avg/60)}:${pad(Math.round(avg%60))}`:"–";
+  setKpis(n,ok,sum);
 }
 const VIEW={k:0,tx:0,ty:0};
 function initPanZoom(){
@@ -249,7 +271,7 @@ function initPanZoom(){
     lastTap=nowp; if(V.sel){ closeSheet(); tick(); } };
   svg.addEventListener("pointerup",end); svg.addEventListener("pointercancel",e=>{ P.delete(e.pointerId); pinch=null; });
 }
-function focusTrain(id){ const tp=TRAINPOS.find(x=>x.id===id); if(tp && VIEW.center) VIEW.center(tp.x,tp.y,2.2); }
+export function focusTrain(id){ if(V.mapMode==="geo"){ geoFocus(id); return; } const tp=TRAINPOS.find(x=>x.id===id); if(tp && VIEW.center) VIEW.center(tp.x,tp.y,2.2); }
 
 /* ---------- station ---------- */
 let stnHTML=null;
@@ -360,6 +382,7 @@ function bind(){
     if(hooks.active&&!hooks.active()) return;
     const tg=e.target;
     const lp=tg.closest("[data-l]"); if(lp){ V.line=lp.dataset.l; store("bp.line",V.line); closeSheet(); build(); content.scrollTop=0; return; }
+    const mm=tg.closest("[data-mm]"); if(mm){ V.mapMode=mm.dataset.mm; store("bp.mapMode",V.mapMode); build(); return; }
     const sg=tg.closest("[data-seg]"); if(sg){ V.seg=sg.dataset.seg; store("bp.seg",V.seg); build(); return; }
     const lg=tg.closest("[data-logj]"); if(lg){ const j=L.JOURNEYS.find(x=>x.id===lg.dataset.logj); if(j) hooks.onLog(j, lg.dataset.logs); return; }
     const pg=tg.closest("[data-pingj]"); if(pg){ const j=L.JOURNEYS.find(x=>x.id===pg.dataset.pingj); if(j) hooks.onPing(j, pg.dataset.logs); return; }

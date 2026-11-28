@@ -4,7 +4,7 @@ import { L, POLL_MS, loadNetwork, loadCalls, departures, fetchJourney, situation
 import { openTimetable, refresh as refreshTT } from "./timetable.js";
 import { rtValue } from "./model.js";
 import { createDetector, requestMotion, listen, sensorPrecision } from "./motion.js";
-import { V, initLive, build as buildLive, tick as tickLive, setStation, buildPicker, locate } from "./live.js";
+import { V, initLive, build as buildLive, tick as tickLive, setStation, buildPicker, locate, focusTrain } from "./live.js";
 import { syncClock, fresh, clockState } from "./clock.js";
 import { tripState, stops, segments, totals, quality, compare, summary, platformRows, platformStats, trends, median, off } from "./model.js";
 import { toJSON, makeFiles, download, shareFiles, sendForAnalysis, readImport, baseName } from "./export.js";
@@ -311,13 +311,14 @@ function drawDeparture(){
     <div class="facts">${fact(t("depNo"),jr.code)}${fact(t("date"),jr.date?dateStr(Date.parse(jr.date+"T12:00:00")):"")}${fact(t("planned"),first?`${hm(first.aDep??first.aArr)} ${first.name} → ${hm(last.aArr??last.aDep)} ${last.name}`:"")}${fact(t("lineName"),jr.lineName)}${fact(t("pattern"),jr.pattern)}${fact(t("operator"),jr.operator)}${fact(t("rtStatus"),rtLabel)}${occ?fact(t("occupancy"),occ):""}</div>
     ${msgs.length?`<div class="alert"><span aria-hidden="true">⚠</span><div>${msgs.slice(0,4).map(m=>`<p>${esc(m)}</p>`).join("")}</div></div>`:""}
     <div class="tblwrap"><table class="tri dept"><thead><tr><th>${t("colStation")}</th><th>${t("colPlan")}</th><th>${t("colRt")}</th><th>${t("delay")}</th></tr></thead><tbody>${rows}</tbody></table></div>
-    <div class="btnrow">${myIx>=0&&!A.active?`<button class="btn primary" id="tvlog">${t("logFrom",esc(myStn))}</button>`:""}<button class="btn" id="tvshare">↗ ${t("shareTrain")}</button>${live?`<button class="btn" id="tvline">${t("showOnLine")}</button>`:""}</div>
+    <div class="btnrow">${myIx>=0&&!A.active?`<button class="btn primary" id="tvlog">${t("logFrom",esc(myStn))}</button>`:""}<button class="btn" id="tvshare">↗ ${t("shareTrain")}</button>${live?`<button class="btn" id="tvline">${t("showOnLine")}</button><button class="btn" id="tvmap">${t("showOnMap")}</button>`:""}</div>
     <p class="hint">${t("deltaHelp2")} · Entur ${hms(jr.fetchedAt)}</p>
   </section>`;
   $("#tvback").onclick=closeDep;
   $("#tvshare").onclick=()=>shareTrain(tv.id, tv.d, tv.to, jr.line, sign);
   const tl=$("#tvlog"); if(tl) tl.onclick=()=>{ const lj=L.JOURNEYS.find(x=>x.id===jr.id); if(lj){ A.tv=null; startPrep(lj, myStn); } };
   const tln=$("#tvline"); if(tln) tln.onclick=()=>{ V.view="line"; V.line=jr.line; store("bp.view","line"); store("bp.line",jr.line); const id=jr.id; A.tv=null; go("now"); V.sel=id; tickLive(); };
+  const tmp=$("#tvmap"); if(tmp) tmp.onclick=()=>{ V.view="net"; store("bp.view","net"); const id=jr.id; A.tv=null; go("now"); V.sel=id; focusTrain(id); tickLive(); };
   draw.tick=setInterval(()=>{ if(A.tab==="train" && !document.hidden) drawDeparture(); }, 10000);
 }
 function drawRun(){

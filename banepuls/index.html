@@ -118,6 +118,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 .train.wait{opacity:.6}
 .sheet{position:fixed;left:50%;transform:translateX(-50%);width:min(504px,calc(100% - 16px));bottom:calc(76px + env(safe-area-inset-bottom,0px));background:var(--surface);border:1px solid var(--rule);border-radius:22px;padding:14px 16px 16px;box-shadow:0 -10px 40px rgba(0,0,0,.6);z-index:5;display:flex;flex-direction:column;gap:10px}
 .sheet .h{display:flex;align-items:center;gap:10px}
+.sheet.compact ol{display:none}
 .sheet .h div{flex:1;min-width:0}
 .sheet .h b{display:block;font-family:var(--f-display);font-weight:700;font-size:21px;line-height:1.1}
 .sheet .h small{color:var(--muted);font-size:13px}
@@ -139,7 +140,7 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 /* network */
 .netview{height:100%;display:flex;flex-direction:column}
 .map{position:relative;flex:1;min-height:0;overflow:hidden;background:var(--bg);border-top:1px solid var(--rule)}
-.map svg{display:block;width:100%;height:100%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+.map #netsvg{display:block;width:100%;height:100%;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
 .map text{font-family:var(--f-display);font-weight:600;font-size:10.5px;fill:#c3cad2}
 .map text.major{fill:var(--fg);font-weight:700}
 .map text.term{fill:var(--fg);font-weight:800;font-size:15px}
@@ -149,6 +150,34 @@ select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,va
 .zoom{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:12px;display:flex;flex-direction:column;gap:6px}
 .zoom button{width:42px;height:42px;border-radius:12px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--rule);font-size:20px;font-weight:600}
 .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 16px 10px}
+/* geographic map (1.3) */
+.mapmode{padding:0 16px 8px}
+.mapmode .seg2{width:100%}.mapmode .seg2 button{flex:1}
+.map.geo{background:#11151a;isolation:isolate}
+.gmap{position:absolute;inset:0;background:#11151a;font-family:var(--f-body)}
+.gmap .gtiles{filter:invert(1) hue-rotate(180deg) brightness(.78) contrast(.92) saturate(.6)}
+.gmap .leaflet-control-container .leaflet-control-attribution{background:rgba(12,15,19,.78);color:var(--muted);font-size:10.5px}
+.gmap .leaflet-control-attribution a{color:#c3cad2}
+.gmap .glbl{background:none;border:0;box-shadow:none;padding:0;color:var(--fg);font-family:var(--f-display);font-weight:700;font-size:12px;text-shadow:0 0 3px #0c0f13,0 0 3px #0c0f13,0 0 2px #0c0f13;display:none}
+.gmap .glbl::before{display:none}
+.gmap.labels .glbl{display:block}
+.gtr{background:none;border:0}
+.gtr b{position:absolute;inset:4px;border-radius:50%;display:grid;place-items:center;color:#071018;font:800 12px/1 var(--f-display);border:2.5px solid #0c0f13;box-shadow:0 1px 4px rgba(0,0,0,.6)}
+.gtr b.late{border-color:#f0b43c}.gtr b.bad{border-color:#ff5d4f}
+.gtr b.wait{opacity:.7}
+.gtr b.sel{outline:2.5px solid #eef1f4;outline-offset:2px;animation:gpulse 1.6s infinite}
+@keyframes gpulse{0%{box-shadow:0 0 0 0 rgba(238,241,244,.7)}100%{box-shadow:0 0 0 14px rgba(238,241,244,0)}}
+.gmap.far .gtr b{inset:9px;font-size:0;border-width:2px}
+.gmap.far .gtr .ar{display:none}
+.gtr .ar{position:absolute;inset:0;display:block}
+.gtr .ar i{position:absolute;left:50%;top:-5px;margin-left:-5px;width:0;height:0;border:5px solid transparent;border-bottom:7px solid}
+.gctl{position:absolute;left:max(12px,env(safe-area-inset-left,0px));top:12px;display:flex;gap:6px;z-index:500}
+.gctl button{width:34px;height:34px;border-radius:50%;border:2.5px solid var(--lc);background:color-mix(in srgb,var(--surface) 92%,transparent);font:800 15px/1 var(--f-display)}
+.gctl button[aria-pressed="false"]{opacity:.4}
+.gctl button[aria-pressed="true"]{background:var(--lc);color:#071018}
+.map.geo .zoom{z-index:500}
+.map.geo .zoom .busy{opacity:.5}.map.geo .zoom .fail{color:#ff5d4f}
+
 .kpi{background:var(--surface);border-radius:12px;padding:6px 10px;display:flex;align-items:baseline;justify-content:space-between;gap:6px;min-width:0}
 .kpi small{font-size:10px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .kpi b{font:700 16px var(--f-mono)}

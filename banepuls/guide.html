@@ -104,7 +104,15 @@ footer{margin-top:44px;color:var(--muted);font-size:14px;border-top:1px solid va
     <li><b>Station</b>: departures from your station, grouped by direction, with where each train is now and a “leave in” countdown that uses your walking time. The nearest station is found from your position if you allow it; you can also pick one.</li>
     <li>Each departure has <span class="btn">Log</span> (start a time study on that train) and <span class="btn">Ping</span> (see <a href="#ping">Ping</a>).</li>
     <li><b>Line</b>: every train on one line, both directions. Tap a train for details and <b>Log from …</b>.</li>
-    <li><b>Map</b>: the whole network with trains in realtime. Drag, pinch or use the buttons to zoom.</li>
+    <li><b>Map</b>: the whole network with trains in realtime. Choose <b>Geographic</b> or <b>Schematic</b> at the top.
+      <ul>
+        <li><b>Geographic</b> draws the real tracks on Kartverket's map, with lines that share track side by side. Each train is a dot in its line colour with the line number, and a small arrow shows its direction. A yellow ring means 1–2 min late, a red ring 3 min or more.</li>
+        <li>Drag and pinch to move and zoom, or use <span class="btn">+</span> <span class="btn">−</span>. <span class="btn">⤢</span> shows the whole network and <span class="btn">◎</span> shows your position, if you allow it. Station names appear when you zoom in.</li>
+        <li>Tap the line buttons (1–5) to hide or show lines. Tap a train for its details, or a station to see its departures.</li>
+        <li><b>Show on map</b> in a departure's details centres the map on that train and follows it until you drag the map.</li>
+        <li>Without signal the tracks are still drawn, but the background map may be missing.</li>
+      </ul></li>
+    <li><b>Schematic</b> is the simplified line diagram: drag, pinch or use the buttons to zoom.</li>
     <li><b>Graph</b>: a graphic timetable of the common tunnel or Tøyen–Brynseng. Steep lines are running trains, vertical lines are trains standing still.</li>
     <li><b>Table</b>: the line timetable, with stations down the side and departures across. Pick line, direction and date (today, tomorrow or any date), and use <span class="btn">← Earlier</span> / <span class="btn">Later →</span> to move four hours at a time. Departures that have left are dimmed and the next one is highlighted. A “·” means the train does not stop there.</li>
     <li>For today, trains close to now (about 8 min back to 25 min ahead) also show deviations: the expected or actual time appears in yellow at 1–2 min and red at 3 min or more. Cancelled departures are struck through.</li>
