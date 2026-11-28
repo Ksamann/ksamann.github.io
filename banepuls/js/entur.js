@@ -137,14 +137,44 @@ export function departures(name,t){
 /* Every stop of one departure, with plan, expected and actual times.
    Actual times are only available for about an hour after the train has passed. */
 export async function fetchJourney(id, date){
-  const d = await gql(`{ serviceJourney(id:${JSON.stringify(id)}) { id line{publicCode} estimatedCalls(date:${JSON.stringify(date)}) {
-    quay{ id publicCode stopPlace{ id name } } aimedArrivalTime expectedArrivalTime actualArrivalTime aimedDepartureTime expectedDepartureTime actualDepartureTime cancellation destinationDisplay{frontText} } } }`);
+  const d = await gql(`{ serviceJourney(id:${JSON.stringify(id)}) { id privateCode operator{name} line{publicCode name} journeyPattern{name}
+    notices{text} situations{ summary{value language} description{value language} }
+    estimatedCalls(date:${JSON.stringify(date)}) {
+      quay{ id publicCode description stopPlace{ id name } } aimedArrivalTime expectedArrivalTime actualArrivalTime aimedDepartureTime expectedDepartureTime actualDepartureTime
+      cancellation forBoarding forAlighting predictionInaccurate realtimeState occupancyStatus destinationDisplay{frontText} notices{text} situations{ summary{value language} } } } }`);
   const sj=d.serviceJourney; if(!sj) throw new Error("journey not found");
-  return { id:sj.id, line:sj.line.publicCode, date, fetchedAt:Date.now(),
+  const txt = arr => (arr||[]).map(x=>x.text).filter(Boolean);
+  const sit = arr => (arr||[]).map(s=>{ const pick=(a,re)=>((a||[]).find(x=>re.test(x.language||""))||(a||[])[0]||{}).value||""; return {no:pick(s.summary,/^(no|nob|nb)$/i), en:pick(s.summary,/^en/i), dno:pick(s.description,/^(no|nob|nb)$/i), den:pick(s.description,/^en/i)}; });
+  return { id:sj.id, line:sj.line.publicCode, lineName:sj.line.name||"", date, fetchedAt:Date.now(),
+    code:sj.privateCode||"", operator:(sj.operator||{}).name||"", pattern:(sj.journeyPattern||{}).name||"",
+    notices:txt(sj.notices), situations:sit(sj.situations),
     dest: sj.estimatedCalls.length ? (sj.estimatedCalls[0].destinationDisplay||{}).frontText||"" : "",
-    calls: sj.estimatedCalls.map(c=>({ id:c.quay.stopPlace.id, name:c.quay.stopPlace.name, quay:c.quay.publicCode||"", dest:(c.destinationDisplay||{}).frontText||"",
+    calls: sj.estimatedCalls.map(c=>({ id:c.quay.stopPlace.id, name:c.quay.stopPlace.name, quay:c.quay.publicCode||"", quayDesc:c.quay.description||"", dest:(c.destinationDisplay||{}).frontText||"",
       aArr:T(c.aimedArrivalTime), aDep:T(c.aimedDepartureTime), eArr:T(c.expectedArrivalTime), eDep:T(c.expectedDepartureTime),
-      xArr:T(c.actualArrivalTime), xDep:T(c.actualDepartureTime), cancel:!!c.cancellation })) };
+      xArr:T(c.actualArrivalTime), xDep:T(c.actualDepartureTime), cancel:!!c.cancellation,
+      board:c.forBoarding!==false, alight:c.forAlighting!==false, inaccurate:!!c.predictionInaccurate, state:c.realtimeState||"", occ:c.occupancyStatus||"",
+      notices:txt(c.notices), situations:sit(c.situations) })) };
+}
+
+/* Planned timetable for one line and date: every service journey with its passing times,
+   placed on the line's station list (both directions, short turns included). */
+const TT = new Map();
+export async function lineTimetable(code, date){
+  const key=code+"|"+date; if(TT.has(key)) return TT.get(key);
+  const d = await gql(`{ serviceJourneys(lines:["RUT:Line:${code}"], activeDates:[${JSON.stringify(date)}]) { id privateCode
+    passingTimes { quay{ stopPlace{ id name } } arrival{time dayOffset} departure{time dayOffset} } } }`);
+  const st=L.NET.lines[code].stations, [y,m,dd]=date.split("-").map(Number), base=new Date(y,m-1,dd).getTime();
+  const at = x => { if(!x || !x.time) return null; const [h,mi,s]=x.time.split(":").map(Number); return new Date(y,m-1,dd+(x.dayOffset||0),h,mi,s||0).getTime(); };
+  const out=[];
+  for(const j of d.serviceJourneys){
+    const calls=j.passingTimes.map((p,i)=>({p:i, stop:p.quay.stopPlace.id, arr:at(p.arrival), dep:at(p.departure)}));
+    if(calls.length<2) continue;
+    const mp=mapToLine(calls, st); if(!mp) continue;
+    const times={}; calls.forEach((c,i)=>{ times[mp.ix[i]]={arr:c.arr, dep:c.dep}; });
+    out.push({id:j.id, code:j.privateCode||"", dir:mp.dir, times, first:calls[0].dep??calls[0].arr, last:calls[calls.length-1].arr??calls[calls.length-1].dep});
+  }
+  out.sort((a,b)=>a.first-b.first);
+  TT.set(key,out); return out;
 }
 
 export async function nearestStations(lat, lon){

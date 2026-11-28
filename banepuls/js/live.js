@@ -6,7 +6,7 @@ import { L, stateAt, delayOf, departures, indexStations } from "./entur.js";
 
 export const V = { view: store("bp.view")||"stn", line: store("bp.line")||"5", sel:null,
   stn: store("bp.stn"), walk: store("bp.walk")??4, pinned: store("bp.pin")||{}, recent: store("bp.recent")||[], picking:false, seg: store("bp.seg")||"tunnel", near:null };
-if(!["stn","line","net","sl"].includes(V.view)) V.view="stn";
+if(!["stn","line","net","sl","tt"].includes(V.view)) V.view="stn";
 let content=null, sheet=null, hooks={};
 export function initLive(c, s, h){ content=c; sheet=s; hooks=h; bind(); }
 
@@ -90,7 +90,7 @@ function drawSheet(now){
       <div><small>${endKnown?t("arrives"):t("terminus")}</small><b>${endKnown?hm(last.arr):esc(j.dest?j.dest.split(" via ")[0]:"–")}</b><em>${endKnown?esc(lastName):""}</em></div>
     </div>
     <ol>${nxt.map(c=>`<li><span>${esc(st[c.ix].name)}</span>${c.aArr&&Math.abs((c.arr||0)-c.aArr)>=60e3?`<s>${hm(c.aArr)}</s>`:"<s></s>"}<span class="mono num">${hm(c.arr||c.dep)}</span></li>`).join("")||`<li><span>${t("lastStation")}</span><s></s><span></span></li>`}</ol>
-    <div class="sacts">${other}<button class="sbtn sh" data-sharej="${esc(j.id)}" aria-label="${t("shareTrain")}">↗</button>${canLog?`<button class="logbtn" data-logj="${esc(j.id)}" data-logs="${esc(st[ix].name)}" style="--c:${COLORS[j.line]}">${t("logFrom",esc(st[ix].name))}</button>`:""}</div>`;
+    <div class="sacts">${other}<button class="sbtn" data-detj="${esc(j.id)}" data-detd="${esc(j.date)}">${t("details")}</button><button class="sbtn sh" data-sharej="${esc(j.id)}" aria-label="${t("shareTrain")}">↗</button>${canLog?`<button class="logbtn" data-logj="${esc(j.id)}" data-logs="${esc(st[ix].name)}" style="--c:${COLORS[j.line]}">${t("logFrom",esc(st[ix].name))}</button>`:""}</div>`;
   if(sheet._html!==html){ sheet.innerHTML=html; sheet._html=html; }
   sheet.hidden=false;
 }
@@ -275,7 +275,7 @@ function drawStn(now){
     else { const n=Math.ceil(d.away-1e-6); pos = (n<=1 && !d.at) ? t("nextFrom",esc(d.where)) : t("stopsAway",n,d.at,esc(d.where)); }
     const dl = d.delay>=180 ? ` · <span class="bd">+${Math.round(d.delay/60)} min</span>` : d.delay>=60 ? ` · <span class="lt">+${Math.round(d.delay/60)} min</span>` : "";
     const pct = d.away==null ? 0 : Math.max(4, 100-Math.min(100,d.away*12));
-    return `<div class="dep"><span class="badge" style="background:${col}">${esc(d.j.line)}</span><span class="t"><b>${esc(d.j.dest||"")}</b><small>${pos}${dl}</small></span>
+    return `<div class="dep tap" data-detj="${esc(d.j.id)}" data-detd="${esc(d.j.date)}"><span class="badge" style="background:${col}">${esc(d.j.line)}</span><span class="t"><b>${esc(d.j.dest||"")}</b><small>${pos}${dl}</small></span>
       <span class="m num ${m<1?"now":""}">${m<1?t("now"):Math.floor(m)}${m<1?"":`<small>${t("min")}</small>`}</span><span class="prog"><i style="width:${pct}%;background:${col}"></i></span>
       <span class="acts"><button class="mini log" data-logj="${esc(d.j.id)}" data-logs="${esc(name)}">${t("logThis")}</button><button class="mini" data-pingj="${esc(d.j.id)}" data-logs="${esc(name)}">${t("pingThis")}</button></span></div>`;
   };
@@ -348,6 +348,7 @@ function bind(){
   sheet.addEventListener("pointerdown",e=>{ if(e.target.closest(".x")) closeSheet(); });
   sheet.addEventListener("click",e=>{
     const lg=e.target.closest("[data-logj]"); if(lg){ const j=L.JOURNEYS.find(x=>x.id===lg.dataset.logj); closeSheet(); if(j) hooks.onLog(j, lg.dataset.logs); return; }
+    const dj=e.target.closest("[data-detj]"); if(dj){ closeSheet(); hooks.onDetails(dj.dataset.detj, dj.dataset.detd); return; }
     const sh=e.target.closest("[data-sharej]"); if(sh){ const j=L.JOURNEYS.find(x=>x.id===sh.dataset.sharej); if(j) hooks.onShare(j); return; }
     const b=e.target.closest("[data-show]"); if(!b) return;
     const id=V.sel, j=L.JOURNEYS.find(x=>x.id===id); if(!j) return;
@@ -362,6 +363,7 @@ function bind(){
     const sg=tg.closest("[data-seg]"); if(sg){ V.seg=sg.dataset.seg; store("bp.seg",V.seg); build(); return; }
     const lg=tg.closest("[data-logj]"); if(lg){ const j=L.JOURNEYS.find(x=>x.id===lg.dataset.logj); if(j) hooks.onLog(j, lg.dataset.logs); return; }
     const pg=tg.closest("[data-pingj]"); if(pg){ const j=L.JOURNEYS.find(x=>x.id===pg.dataset.pingj); if(j) hooks.onPing(j, pg.dataset.logs); return; }
+    const dj=tg.closest("[data-detj]"); if(dj){ hooks.onDetails(dj.dataset.detj, dj.dataset.detd); return; }
     if(V.view!=="stn") return;
     if(tg.closest("#chg")){ V.picking=true; build(); return; }
     if(tg.closest("#wm")){ V.walk=Math.max(0,V.walk-1); store("bp.walk",V.walk); tick(); return; }

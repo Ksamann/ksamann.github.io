@@ -1,5 +1,5 @@
 /* Shared helpers, local storage and UI strings (English default, Norwegian). */
-export const APP_VERSION = "1.1.0";
+export const APP_VERSION = "1.2.0";
 export const COLORS = {"1":"#009cdc","2":"#ea5b0b","3":"#a683a5","4":"#3d6fd1","5":"#3aaa35"};
 export const INK = {"1":"#06131a","2":"#1a0a02","3":"#170f17","4":"#ffffff","5":"#061405"};
 
@@ -45,7 +45,7 @@ export function t(key, ...a){ const v=(STR[lang]&&STR[lang][key]!==undefined)?ST
 const STR = {
 en:{
   tabNow:"Now", tabLog:"Log", tabTrips:"Trips", tabMore:"More",
-  vStation:"Station", vLine:"Line", vMap:"Map", vGraph:"Timetable",
+  vStation:"Station", vLine:"Line", vMap:"Map", vGraph:"Graph", vTable:"Table",
   live:"LIVE", connecting:"CONNECTING", noData:"NO DATA", offline:"OFFLINE", minOld:n=>`${n} MIN OLD`,
   netFail:"Couldn't load the lines. Check that you're online and try again.", retry:"Try again",
   nightPause:"No trains running right now", nightPauseText:"The metro has its night break. Trains appear here when service starts.",
@@ -141,11 +141,17 @@ en:{
   sensorSuggest:(k,tm)=>`Sensor: ${k} ${tm}`, use:"Use", sensorDep:"departure", sensorArr:"arrival",
   kSensor:"Sensor vs your taps (median)", sensorStats:(m,n,x,mi)=>`Sensor matched ${n} of your taps: median ${m} s, worst ${x} s. ${mi} taps without a sensor event.`,
   // analysis
+  details:"Details", back:"Back", cancelled:"Cancelled", rtInaccurate:"Uncertain forecast", rtLive:"Realtime", rtPlanOnly:"Timetable only",
+  depNo:"Departure no.", date:"Date", planned:"Planned", lineName:"Line", pattern:"Route", operator:"Operator", rtStatus:"Data", occupancy:"Occupancy", platform:"Platform",
+  onlyAlight:"Set-down only", onlyBoard:"Pick-up only", deltaHelp2:"✓ = actual time reported. ≈ = identical to the plan, probably not measured. Faded = forecast.",
+  ttToday:"Today", ttTomorrow:"Tomorrow", ttDate:"Date", ttEarlier:"Earlier", ttLater:"Later", ttLoading:"Fetching the timetable…", ttFail:"Couldn't fetch the timetable. Check your connection and try again.",
+  ttNone:"No departures in this period.", ttHint:"Times are the timetable. Departures within about 25 minutes also show realtime: yellow and red are delayed, struck through is cancelled. Faded columns have run. Tap a departure number for details.",
+  ttHintPlan:"Times are the timetable. Tap a departure number for details.",
   sAnalysis:"Analysis tool", sAnalysisD:"For whoever collects data: combine and analyse files and emails from many people. Runs in the browser; nothing is uploaded."
 },
 no:{
   tabNow:"Nå", tabLog:"Logg", tabTrips:"Turer", tabMore:"Mer",
-  vStation:"Stasjon", vLine:"Linje", vMap:"Kart", vGraph:"Rutegraf",
+  vStation:"Stasjon", vLine:"Linje", vMap:"Kart", vGraph:"Graf", vTable:"Tabell",
   live:"LIVE", connecting:"KOBLER TIL", noData:"INGEN DATA", offline:"FRAKOBLET", minOld:n=>`${n} MIN GAMMEL`,
   netFail:"Fikk ikke hentet linjene. Sjekk at du er på nett, og prøv igjen.", retry:"Prøv igjen",
   nightPause:"Ingen tog i trafikk akkurat nå", nightPauseText:"T-banen har nattpause. Togene dukker opp her når driften starter.",
@@ -225,5 +231,11 @@ no:{
   sensorOn:"Sensor", sensorStill:"står stille", sensorMoving:"i bevegelse", sensorWait:"venter på data", sensorOff:"ingen tilgang", sensorEnable:"Slå på sensor",
   sensorSuggest:(k,tm)=>`Sensor: ${k} ${tm}`, use:"Bruk", sensorDep:"avgang", sensorArr:"ankomst",
   kSensor:"Sensor mot dine trykk (median)", sensorStats:(m,n,x,mi)=>`Sensoren traff ${n} av trykkene dine: median ${m} s, verst ${x} s. ${mi} trykk uten sensorhendelse.`,
+  details:"Detaljer", back:"Tilbake", cancelled:"Innstilt", rtInaccurate:"Usikker prognose", rtLive:"Sanntid", rtPlanOnly:"Bare rute",
+  depNo:"Avgangsnr.", date:"Dato", planned:"Planlagt", lineName:"Linje", pattern:"Rute", operator:"Operatør", rtStatus:"Data", occupancy:"Belegg", platform:"Spor",
+  onlyAlight:"Bare avstigning", onlyBoard:"Bare påstigning", deltaHelp2:"✓ = faktisk tid er meldt. ≈ = lik planen, trolig ikke målt. Svak = prognose.",
+  ttToday:"I dag", ttTomorrow:"I morgen", ttDate:"Dato", ttEarlier:"Tidligere", ttLater:"Senere", ttLoading:"Henter rutetabellen …", ttFail:"Fikk ikke hentet rutetabellen. Sjekk nettet og prøv igjen.",
+  ttNone:"Ingen avganger i dette tidsrommet.", ttHint:"Tidene er ruteplanen. Avganger de neste cirka 25 minuttene viser også sanntid: gult og rødt er forsinket, gjennomstreket er innstilt. Nedtonede kolonner har gått. Trykk på et avgangsnummer for detaljer.",
+  ttHintPlan:"Tidene er ruteplanen. Trykk på et avgangsnummer for detaljer.",
   sAnalysis:"Analyseverktøy", sAnalysisD:"For den som samler inn data: slå sammen og analyser filer og e-poster fra mange. Kjører i nettleseren, ingenting lastes opp."
 }};
